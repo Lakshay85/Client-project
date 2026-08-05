@@ -1,0 +1,387 @@
+import 'dotenv/config';
+import bcrypt from 'bcryptjs';
+import cors from 'cors';
+import express, { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { RowDataPacket } from 'mysql2';
+import { pool } from './database/connection.js';
+
+type User = RowDataPacket & { id: string; name: string; email: string; password_hash: string; status: 'active' | 'disabled'; created_at: Date };
+type PublicUser = { id: string; name: string; email: string; createdAt: string };
+
+const port = Number(process.env.PORT ?? 4000);
+const jwtSecret = process.env.JWT_SECRET ?? 'development-only-secret-change-me';
+const app = express();
+app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
+app.use(express.json());
+
+const publicUser = (user: User): PublicUser => ({ id: user.id, name: user.name, email: user.email, createdAt: new Date(user.created_at).toISOString() });
+const issueToken = (user: User) => jwt.sign({ sub: user.id, email: user.email }, jwtSecret, { expiresIn: '7d' });
+const validEmail = (value: unknown): value is string => typeof value === 'string' && /^\S+@\S+\.\S+$/.test(value);
+const clientIp = (req: Request) => req.ip || req.socket.remoteAddress || null;
+
+async function findUserByEmail(email: string): Promise<User | undefined> {
+  const [rows] = await pool.query<User[]>('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
+  return rows[0];
+}
+
+async function findUserById(id: string): Promise<User | undefined> {
+  const [rows] = await pool.query<User[]>('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+  return rows[0];
+}
+
+app.get('/api/health', async (_req, res, next) => {
+  try { await pool.query('SELECT 1'); res.json({ status: 'ok', database: 'connected' }); } catch (error) { next(error); }
+});
+
+app.post('/api/auth/signup', async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body as Record<string, unknown>;
+    if (typeof name !== 'string' || name.trim().length < 2 || !validEmail(email) || typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ message: 'Provide a name, valid email, and password of at least 8 characters.' });
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+    if (await findUserByEmail(normalizedEmail)) return res.status(409).json({ message: 'An account with this email already exists.' });
+    const user = { id: crypto.randomUUID(), name: name.trim(), email: normalizedEmail, passwordHash: await bcrypt.hash(password, 12) };
+    await pool.execute('INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)', [user.id, user.name, user.email, user.passwordHash]);
+    const savedUser = await findUserById(user.id);
+    if (!savedUser) throw new Error('User was not created.');
+    return res.status(201).json({ token: issueToken(savedUser), user: publicUser(savedUser) });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/auth/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body as Record<string, unknown>;
+    if (!validEmail(email) || typeof password !== 'string') return res.status(400).json({ message: 'Email and password are required.' });
+    const user = await findUserByEmail(email.toLowerCase().trim());
+    if (!user || user.status !== 'active' || !(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ message: 'Invalid email or password.' });
+    await pool.execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+    await pool.execute('INSERT INTO login_events (user_id, ip_address, user_agent) VALUES (?, ?, ?)', [user.id, clientIp(req), req.get('user-agent')?.slice(0, 500) ?? null]);
+    return res.json({ token: issueToken(user), user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+
+app.get('/api/auth/me', async (req, res, next) => {
+  try {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) return res.status(401).json({ message: 'Authentication required.' });
+    const payload = jwt.verify(header.slice(7), jwtSecret) as jwt.JwtPayload;
+    const user = typeof payload.sub === 'string' ? await findUserById(payload.sub) : undefined;
+    if (!user || user.status !== 'active') return res.status(401).json({ message: 'User is not available.' });
+    return res.json({ user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+
+interface AuthRequest extends Request {
+  user?: User;
+}
+
+async function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) return res.status(401).json({ message: 'Authentication required.' });
+    const payload = jwt.verify(header.slice(7), jwtSecret) as jwt.JwtPayload;
+    const user = typeof payload.sub === 'string' ? await findUserById(payload.sub) : undefined;
+    if (!user || user.status !== 'active') return res.status(401).json({ message: 'User is not available.' });
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid or expired authentication token.' });
+  }
+}
+
+const generateShareId = () => Math.random().toString(36).substring(2, 10);
+
+// --- Form Builder API Routes ---
+
+// 1. Create a new Form
+app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { title, description, fields } = req.body as {
+      title?: string;
+      description?: string;
+      fields?: Array<{
+        label: string;
+        fieldType: string;
+        placeholder?: string;
+        helpText?: string;
+        isRequired?: boolean;
+        options?: string[];
+        config?: Record<string, unknown>;
+      }>;
+    };
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ message: 'Form title is required.' });
+    }
+
+    if (!Array.isArray(fields) || fields.length === 0) {
+      return res.status(400).json({ message: 'Form must contain at least one field.' });
+    }
+
+    const formId = crypto.randomUUID();
+    const shareId = generateShareId();
+    const userId = req.user!.id;
+
+    await pool.execute(
+      'INSERT INTO forms (id, share_id, user_id, title, description) VALUES (?, ?, ?, ?, ?)',
+      [formId, shareId, userId, title.trim(), description?.trim() || null]
+    );
+
+    for (let i = 0; i < fields.length; i++) {
+      const f = fields[i];
+      const fieldId = crypto.randomUUID();
+      await pool.execute(
+        `INSERT INTO form_fields (id, form_id, label, field_type, placeholder, help_text, is_required, options, config, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          fieldId,
+          formId,
+          f.label || `Question ${i + 1}`,
+          f.fieldType || 'text',
+          f.placeholder || null,
+          f.helpText || null,
+          Boolean(f.isRequired),
+          f.options ? JSON.stringify(f.options) : null,
+          f.config ? JSON.stringify(f.config) : null,
+          i
+        ]
+      );
+    }
+
+    return res.status(201).json({
+      message: 'Form created successfully',
+      form: { id: formId, shareId, title, description, fieldCount: fields.length }
+    });
+  } catch (error) { next(error); }
+});
+
+// 2. Get all forms owned by current user
+app.get('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT f.id, f.share_id as shareId, f.title, f.description, f.status, f.created_at as createdAt,
+              COUNT(DISTINCT s.id) as responseCount,
+              COUNT(DISTINCT ff.id) as fieldCount
+       FROM forms f
+       LEFT JOIN form_submissions s ON s.form_id = f.id
+       LEFT JOIN form_fields ff ON ff.form_id = f.id
+       WHERE f.user_id = ?
+       GROUP BY f.id
+       ORDER BY f.created_at DESC`,
+      [userId]
+    );
+
+    return res.json({ forms: rows });
+  } catch (error) { next(error); }
+});
+
+// 3. Get single form details (for creator)
+app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    const [forms] = await pool.query<RowDataPacket[]>(
+      'SELECT id, share_id as shareId, title, description, status, created_at as createdAt FROM forms WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (forms.length === 0) {
+      return res.status(404).json({ message: 'Form not found.' });
+    }
+
+    const form = forms[0];
+    const [fields] = await pool.query<RowDataPacket[]>(
+      'SELECT id, label, field_type as fieldType, placeholder, help_text as helpText, is_required as isRequired, options, config, sort_order as sortOrder FROM form_fields WHERE form_id = ? ORDER BY sort_order ASC',
+      [id]
+    );
+
+    const [submissions] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM form_submissions WHERE form_id = ?',
+      [id]
+    );
+
+    return res.json({
+      form: {
+        ...form,
+        fields: fields.map(f => ({
+          ...f,
+          isRequired: Boolean(f.isRequired),
+          options: f.options ? (typeof f.options === 'string' ? JSON.parse(f.options) : f.options) : [],
+          config: f.config ? (typeof f.config === 'string' ? JSON.parse(f.config) : f.config) : {}
+        })),
+        responseCount: submissions[0]?.count || 0
+      }
+    });
+  } catch (error) { next(error); }
+});
+
+// 4. Delete form
+app.delete('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const [result] = await pool.execute('DELETE FROM forms WHERE id = ? AND user_id = ?', [id, userId]);
+    return res.json({ message: 'Form deleted successfully.' });
+  } catch (error) { next(error); }
+});
+
+// 5. Get responses for a form (for creator)
+app.get('/api/forms/:id/responses', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    // Check ownership
+    const [forms] = await pool.query<RowDataPacket[]>(
+      'SELECT id, title FROM forms WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (forms.length === 0) {
+      return res.status(404).json({ message: 'Form not found.' });
+    }
+
+    const [fields] = await pool.query<RowDataPacket[]>(
+      'SELECT id, label, field_type as fieldType, sort_order as sortOrder FROM form_fields WHERE form_id = ? ORDER BY sort_order ASC',
+      [id]
+    );
+
+    const [submissions] = await pool.query<RowDataPacket[]>(
+      'SELECT id, submitted_at as submittedAt, submitter_ip as submitterIp FROM form_submissions WHERE form_id = ? ORDER BY submitted_at DESC',
+      [id]
+    );
+
+    const submissionIds = submissions.map(s => s.id);
+    let answersMap: Record<string, Record<string, string>> = {};
+
+    if (submissionIds.length > 0) {
+      const [answers] = await pool.query<RowDataPacket[]>(
+        `SELECT submission_id, field_id, answer_value FROM form_submission_answers WHERE submission_id IN (?)`,
+        [submissionIds]
+      );
+
+      answers.forEach(a => {
+        if (!answersMap[a.submission_id]) answersMap[a.submission_id] = {};
+        answersMap[a.submission_id][a.field_id] = a.answer_value;
+      });
+    }
+
+    const formattedSubmissions = submissions.map(s => ({
+      id: s.id,
+      submittedAt: s.submittedAt,
+      submitterIp: s.submitterIp,
+      answers: answersMap[s.id] || {}
+    }));
+
+    return res.json({
+      formTitle: forms[0].title,
+      fields,
+      submissions: formattedSubmissions
+    });
+  } catch (error) { next(error); }
+});
+
+// 6. Public Form Details (Accessible via share link)
+app.get('/api/public/forms/:shareId', async (req, res, next) => {
+  try {
+    const { shareId } = req.params;
+    const [forms] = await pool.query<RowDataPacket[]>(
+      'SELECT id, share_id as shareId, title, description, created_at as createdAt FROM forms WHERE share_id = ? AND status = "published"',
+      [shareId]
+    );
+
+    if (forms.length === 0) {
+      return res.status(404).json({ message: 'Form not found or is no longer available.' });
+    }
+
+    const form = forms[0];
+    const [fields] = await pool.query<RowDataPacket[]>(
+      'SELECT id, label, field_type as fieldType, placeholder, help_text as helpText, is_required as isRequired, options, config, sort_order as sortOrder FROM form_fields WHERE form_id = ? ORDER BY sort_order ASC',
+      [form.id]
+    );
+
+    return res.json({
+      form: {
+        id: form.id,
+        shareId: form.shareId,
+        title: form.title,
+        description: form.description,
+        fields: fields.map(f => ({
+          ...f,
+          isRequired: Boolean(f.isRequired),
+          options: f.options ? (typeof f.options === 'string' ? JSON.parse(f.options) : f.options) : [],
+          config: f.config ? (typeof f.config === 'string' ? JSON.parse(f.config) : f.config) : {}
+        }))
+      }
+    });
+  } catch (error) { next(error); }
+});
+
+// 7. Public Form Submission
+app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
+  try {
+    const { shareId } = req.params;
+    const { answers } = req.body as { answers?: Record<string, unknown> };
+
+    const [forms] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM forms WHERE share_id = ? AND status = "published"',
+      [shareId]
+    );
+
+    if (forms.length === 0) {
+      return res.status(404).json({ message: 'Form not found or is closed for submissions.' });
+    }
+
+    const formId = forms[0].id;
+    const [fields] = await pool.query<RowDataPacket[]>(
+      'SELECT id, label, is_required as isRequired FROM form_fields WHERE form_id = ?',
+      [formId]
+    );
+
+    // Validate required fields
+    if (answers) {
+      for (const field of fields) {
+        if (field.isRequired) {
+          const val = answers[field.id];
+          if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+            return res.status(400).json({ message: `"${field.label}" is required.` });
+          }
+        }
+      }
+    }
+
+    const submissionId = crypto.randomUUID();
+    const ip = clientIp(req);
+
+    await pool.execute(
+      'INSERT INTO form_submissions (id, form_id, submitter_ip) VALUES (?, ?, ?)',
+      [submissionId, formId, ip]
+    );
+
+    if (answers && typeof answers === 'object') {
+      for (const [fieldId, val] of Object.entries(answers)) {
+        if (val !== undefined && val !== null) {
+          const formattedVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+          await pool.execute(
+            'INSERT INTO form_submission_answers (submission_id, field_id, answer_value) VALUES (?, ?, ?)',
+            [submissionId, fieldId, formattedVal]
+          );
+        }
+      }
+    }
+
+    return res.status(201).json({ message: 'Response submitted successfully!', submissionId });
+  } catch (error) { next(error); }
+});
+
+app.use((_req, res) => res.status(404).json({ message: 'Route not found.' }));
+app.use((error: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(error);
+  res.status(500).json({ message: 'Something went wrong.' });
+});
+
+app.listen(port, () => console.log(`API running at http://localhost:${port}`));
