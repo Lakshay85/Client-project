@@ -11,6 +11,8 @@ interface FormBuilderProps {
   initialTitle?: string;
   initialDescription?: string;
   initialFields?: FormField[];
+  initialAccessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
+  initialRestrictedEmails?: string[];
 }
 
 export function FormBuilder({
@@ -20,12 +22,19 @@ export function FormBuilder({
   onFormCreated,
   initialTitle,
   initialDescription,
-  initialFields
+  initialFields,
+  initialAccessType = 'allow_all',
+  initialRestrictedEmails = []
 }: FormBuilderProps) {
   const [title, setTitle] = useState(initialTitle || 'Untitled Form');
   const [description, setDescription] = useState(
     initialDescription ?? 'Please fill out this form to submit your details.'
   );
+  const [accessType, setAccessType] = useState<'allow_all' | 'allow_only' | 'restrict_specific'>(
+    initialAccessType
+  );
+  const [restrictedEmails, setRestrictedEmails] = useState<string[]>(initialRestrictedEmails);
+  const [emailInput, setEmailInput] = useState('');
   const [fields, setFields] = useState<FormField[]>(() => {
     if (initialFields && initialFields.length > 0) {
       return initialFields.map((f, i) => ({
@@ -70,6 +79,25 @@ export function FormBuilder({
   const [error, setError] = useState('');
   const [draggedTemplate, setDraggedTemplate] = useState<FieldTemplate | null>(null);
   const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
+
+  const addEmailTag = (emailStr?: string) => {
+    const target = emailStr || emailInput;
+    if (!target) return;
+    const parsed = target
+      .split(/[\s,;]+/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e && /^\S+@\S+\.\S+$/.test(e));
+
+    if (parsed.length > 0) {
+      const unique = Array.from(new Set([...restrictedEmails, ...parsed]));
+      setRestrictedEmails(unique);
+      setEmailInput('');
+    }
+  };
+
+  const removeEmailTag = (emailToRemove: string) => {
+    setRestrictedEmails(restrictedEmails.filter((e) => e !== emailToRemove));
+  };
 
   const addFieldFromTemplate = (template: FieldTemplate, targetIndex?: number) => {
     const newField: FormField = {
@@ -169,6 +197,20 @@ export function FormBuilder({
       setError('Please add at least one field to your form.');
       return;
     }
+    if (accessType !== 'allow_all' && restrictedEmails.length === 0 && !emailInput.trim()) {
+      setError(`Please add at least one email address for ${accessType === 'allow_only' ? 'allowing' : 'restricting'} submissions.`);
+      return;
+    }
+
+    // Auto-add leftover email in input field if present
+    let finalEmails = [...restrictedEmails];
+    if (emailInput.trim()) {
+      const parsed = emailInput
+        .split(/[\s,;]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e && /^\S+@\S+\.\S+$/.test(e));
+      finalEmails = Array.from(new Set([...finalEmails, ...parsed]));
+    }
 
     setError('');
     setPublishing(true);
@@ -183,6 +225,8 @@ export function FormBuilder({
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
+          accessType,
+          restrictedEmails: finalEmails,
           fields: fields.map((f) => ({
             label: f.label,
             fieldType: f.fieldType,
@@ -347,11 +391,129 @@ export function FormBuilder({
                     placeholder="Form Description (Optional)"
                     rows={2}
                   />
+
+                  {/* Submission Access Control Panel */}
+                  <div className="access-control-box">
+                    <div className="access-control-header">
+                      <Icon name="lock" size={16} />
+                      <span>Submission Access Restrictions</span>
+                    </div>
+
+                    <div className="access-options-grid">
+                      <label className={`access-radio-card ${accessType === 'allow_all' ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="accessType"
+                          value="allow_all"
+                          checked={accessType === 'allow_all'}
+                          onChange={() => setAccessType('allow_all')}
+                        />
+                        <div>
+                          <strong>Allow All Users</strong>
+                          <span className="radio-desc">Open access: any valid email ID can submit.</span>
+                        </div>
+                      </label>
+
+                      <label className={`access-radio-card ${accessType === 'allow_only' ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="accessType"
+                          value="allow_only"
+                          checked={accessType === 'allow_only'}
+                          onChange={() => setAccessType('allow_only')}
+                        />
+                        <div>
+                          <strong>Allow Only Specific Users</strong>
+                          <span className="radio-desc">Only specified email IDs can submit (Whitelist).</span>
+                        </div>
+                      </label>
+
+                      <label className={`access-radio-card ${accessType === 'restrict_specific' ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="accessType"
+                          value="restrict_specific"
+                          checked={accessType === 'restrict_specific'}
+                          onChange={() => setAccessType('restrict_specific')}
+                        />
+                        <div>
+                          <strong>Restrict Specific Users</strong>
+                          <span className="radio-desc">Block specific email IDs from submitting (Blacklist).</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {accessType !== 'allow_all' && (
+                      <div className="email-restriction-input-area">
+                        <label className="input-sublabel">
+                          {accessType === 'allow_only'
+                            ? 'Specify email IDs allowed to submit:'
+                            : 'Specify email IDs restricted from submitting:'}
+                        </label>
+
+                        <div className="email-tag-input-row">
+                          <input
+                            type="email"
+                            placeholder="e.g. user@example.com (Press Enter or Click Add)"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addEmailTag();
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="coral-button btn-sm"
+                            onClick={() => addEmailTag()}
+                          >
+                            + Add Email
+                          </button>
+                        </div>
+
+                        {restrictedEmails.length > 0 && (
+                          <div className="email-tags-wrapper">
+                            {restrictedEmails.map((email) => (
+                              <span key={email} className="email-tag-chip">
+                                {email}
+                                <button
+                                  type="button"
+                                  className="remove-email-btn"
+                                  onClick={() => removeEmailTag(email)}
+                                  title="Remove email"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="access-info-note">
+                          {accessType === 'allow_only'
+                            ? `Only ${restrictedEmails.length} specified email address(es) will be allowed.`
+                            : `${restrictedEmails.length} specified email address(es) will be blocked.`}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
                   <h1 className="preview-title">{title}</h1>
                   {description && <p className="preview-description">{description}</p>}
+                  {accessType !== 'allow_all' && (
+                    <div className="preview-access-badge">
+                      <Icon name="lock" size={14} />
+                      <span>
+                        {accessType === 'allow_only'
+                          ? `Access Restricted: Only ${restrictedEmails.length} authorized user email(s) can submit`
+                          : `Access Restricted: ${restrictedEmails.length} user email(s) restricted`}
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
             </div>

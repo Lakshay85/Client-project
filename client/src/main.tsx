@@ -494,86 +494,168 @@ function AuthPage({
   error: string;
 }) {
   const signup = mode === 'signup';
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <main className="auth-page app-shell">
-      <nav className="top-nav">
+      <nav className="top-nav auth-nav">
         <a className="brand" onClick={() => onMode('home')}>
           <div className="brand-logo-icon">F</div>
           form<span>Guard</span>
         </a>
-        <button className="text-button" onClick={() => onMode('home')}>
+        <button className="text-button back-home-btn" onClick={() => onMode('home')}>
           ← Back home
         </button>
       </nav>
-      <div className="auth-shell">
-        <section className="auth-intro">
-          <h1>
-            {signup ? (
-              <>
-                Build & Share<br />
-                <em>Custom Forms.</em>
-              </>
-            ) : (
-              <>
-                Welcome<br />
-                <em>Back.</em>
-              </>
-            )}
-          </h1>
-          <p>
-            {signup
-              ? 'Create an account to build shareable forms and collect responses.'
-              : 'Log in to manage your forms and view submitted responses.'}
-          </p>
-        </section>
-        <section className="card auth-card">
-          <h2>{signup ? 'Create your account' : 'Log in to FormGuard'}</h2>
-          <form onSubmit={onSubmit}>
-            {signup && (
-              <label>
-                Your name
-                <input
-                  name="name"
-                  autoComplete="name"
-                  placeholder="Alex Morgan"
-                  required
-                  minLength={2}
-                />
-              </label>
-            )}
-            <label>
-              Email address
-              <input
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                required
-              />
-            </label>
-            <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                autoComplete={signup ? 'new-password' : 'current-password'}
-                placeholder="At least 8 characters"
-                required
-                minLength={8}
-              />
-            </label>
-            {error && <div className="form-error">{error}</div>}
-            <button className="coral-button form-button" disabled={loading}>
-              {loading ? 'Please wait…' : signup ? 'Create Account →' : 'Log In →'}
-            </button>
-          </form>
-          <div className="switch">
-            {signup ? 'Already have an account?' : 'New to FormGuard?'}
-            <button onClick={() => onMode(signup ? 'login' : 'signup')}>
-              {signup ? 'Log in' : 'Create one'}
-            </button>
-          </div>
-        </section>
+
+      <div className="auth-container">
+        <div className="auth-shell">
+          {/* Left Column: Visual Teaser & Feature Highlights */}
+          <section className="auth-intro">
+            <div className="auth-badge">
+              <span className="live-dot"></span> Secure Form Studio 2.0
+            </div>
+            <h1>
+              {signup ? (
+                <>
+                  Build & Share<br />
+                  <span className="gradient-text">Custom Forms.</span>
+                </>
+              ) : (
+                <>
+                  Welcome Back to<br />
+                  <span className="gradient-text">FormGuard.</span>
+                </>
+              )}
+            </h1>
+            <p className="auth-subtitle">
+              {signup
+                ? 'Create a free account to start designing custom forms, restricting submissions by email, and gathering real-time data.'
+                : 'Log in to access your form workspace, manage submission restrictions, and inspect real-time responses.'}
+            </p>
+
+            <div className="auth-features-list">
+              <div className="feature-item">
+                <div className="feature-icon">✨</div>
+                <div>
+                  <strong>Drag & Drop Form Builder</strong>
+                  <span>Build forms with 18+ rich input fields, pickers & options.</span>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">🔒</div>
+                <div>
+                  <strong>Email Access Control</strong>
+                  <span>Restrict form submissions by specific user email IDs or domain rules.</span>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">📊</div>
+                <div>
+                  <strong>Analytics & CSV Exports</strong>
+                  <span>Inspect responses, view breakdowns & download formatted CSV reports.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Right Column: Glassmorphic Auth Card */}
+          <section className="card auth-card">
+            {/* Mode Switch Tabs */}
+            <div className="auth-tabs">
+              <button
+                type="button"
+                className={`auth-tab ${!signup ? 'active' : ''}`}
+                onClick={() => onMode('login')}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                className={`auth-tab ${signup ? 'active' : ''}`}
+                onClick={() => onMode('signup')}
+              >
+                Create Account
+              </button>
+            </div>
+
+            <div className="auth-card-header">
+              <h2>{signup ? 'Create your account' : 'Welcome back'}</h2>
+              <p>{signup ? 'Get started in under 30 seconds' : 'Enter your credentials to continue'}</p>
+            </div>
+
+            <form onSubmit={onSubmit} className="auth-form">
+              {signup && (
+                <div className="form-group">
+                  <label htmlFor="auth-name">Your Full Name</label>
+                  <div className="input-icon-wrapper">
+                    <Icon name="users" size={16} />
+                    <input
+                      id="auth-name"
+                      name="name"
+                      autoComplete="name"
+                      placeholder="Alex Morgan"
+                      required
+                      minLength={2}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label htmlFor="auth-email">Email Address</label>
+                <div className="input-icon-wrapper">
+                  <Icon name="email" size={16} />
+                  <input
+                    id="auth-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="auth-password">Password</label>
+                <div className="input-icon-wrapper">
+                  <Icon name="lock" size={16} />
+                  <input
+                    id="auth-password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete={signup ? 'new-password' : 'current-password'}
+                    placeholder="At least 8 characters"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <Icon name="eye" size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {error && <div className="form-error auth-error-alert">{error}</div>}
+
+              <button className="coral-button form-submit-btn" disabled={loading}>
+                {loading ? 'Please wait…' : signup ? 'Create Account →' : 'Log In to Workspace →'}
+              </button>
+            </form>
+
+            <div className="auth-footer-switch">
+              <span>{signup ? 'Already have an account?' : 'Don’t have an account yet?'}</span>
+              <button type="button" className="switch-link-btn" onClick={() => onMode(signup ? 'login' : 'signup')}>
+                {signup ? 'Log in here' : 'Sign up for free'}
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   );

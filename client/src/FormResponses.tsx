@@ -55,6 +55,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
     const headers = [
       'Submission ID',
       'Submitted At',
+      'Submitter Email',
       'Submitter IP',
       ...fields.map((f) => `"${f.label.replace(/"/g, '""')}"`)
     ].join(',');
@@ -66,6 +67,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
       return [
         sub.id,
         new Date(sub.submittedAt).toLocaleString(),
+        `"${String(sub.submitterEmail || 'N/A').replace(/"/g, '""')}"`,
         sub.submitterIp || 'N/A',
         ...answers
       ].join(',');
@@ -291,6 +293,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                 <tr>
                   <th>#</th>
                   <th>Submitted At</th>
+                  <th>Submitter Email</th>
                   <th>IP Address</th>
                   {fields.map((f) => (
                     <th key={f.id}>{f.label}</th>
@@ -311,6 +314,9 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                         dateStyle: 'short',
                         timeStyle: 'short'
                       })}
+                    </td>
+                    <td className="email-cell">
+                      <strong>{sub.submitterEmail || 'N/A'}</strong>
                     </td>
                     <td className="ip-cell">{sub.submitterIp || 'N/A'}</td>
                     {fields.map((f) => (
@@ -360,6 +366,10 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           {submissions[selectedIndex] && (
             <div className="card response-card-detail">
               <div className="detail-meta">
+                <span>
+                  <strong>Submitter Email:</strong>{' '}
+                  {submissions[selectedIndex].submitterEmail || 'N/A'}
+                </span>
                 <span>
                   <strong>Submitted:</strong>{' '}
                   {new Date(submissions[selectedIndex].submittedAt).toLocaleString()}
@@ -414,7 +424,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               <div>
                 <h2>Submission Details</h2>
                 <div className="modal-subtext">
-                  Submitted on {new Date(activeModalSubmission.submittedAt).toLocaleString()}
+                  Submitted by {activeModalSubmission.submitterEmail || 'N/A'} on {new Date(activeModalSubmission.submittedAt).toLocaleString()}
                 </div>
               </div>
               <button
@@ -427,7 +437,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
 
             <div className="detail-modal-body">
               <div className="modal-ip-badge">
-                Submitter IP: {activeModalSubmission.submitterIp || 'N/A'}
+                Submitter Email: <strong>{activeModalSubmission.submitterEmail || 'N/A'}</strong> | IP: {activeModalSubmission.submitterIp || 'N/A'}
               </div>
 
               <div className="detail-qa-list">

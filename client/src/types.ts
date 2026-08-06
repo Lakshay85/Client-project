@@ -39,12 +39,16 @@ export interface FormField {
   sortOrder?: number;
 }
 
+export type AccessType = 'allow_all' | 'allow_only' | 'restrict_specific';
+
 export interface Form {
   id: string;
   shareId: string;
   title: string;
   description?: string;
   status: 'published' | 'draft';
+  accessType?: AccessType;
+  restrictedEmails?: string[];
   createdAt: string;
   fields?: FormField[];
   responseCount?: number;
@@ -55,6 +59,7 @@ export interface FormSubmission {
   id: string;
   submittedAt: string;
   submitterIp?: string;
+  submitterEmail?: string;
   answers: Record<string, string>;
 }
 

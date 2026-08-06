@@ -98,9 +98,11 @@ const generateShareId = () => Math.random().toString(36).substring(2, 10);
 // 1. Create a new Form
 app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { title, description, fields } = req.body as {
+    const { title, description, accessType, restrictedEmails, fields } = req.body as {
       title?: string;
       description?: string;
+      accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
+      restrictedEmails?: string[];
       fields?: Array<{
         label: string;
         fieldType: string;
@@ -120,13 +122,30 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
       return res.status(400).json({ message: 'Form must contain at least one field.' });
     }
 
+    const validAccessType: 'allow_all' | 'allow_only' | 'restrict_specific' =
+      accessType === 'allow_only' || accessType === 'restrict_specific'
+        ? accessType
+        : 'allow_all';
+
+    const normalizedEmails = Array.isArray(restrictedEmails)
+      ? restrictedEmails.map(e => String(e).toLowerCase().trim()).filter(Boolean)
+      : [];
+
     const formId = crypto.randomUUID();
     const shareId = generateShareId();
     const userId = req.user!.id;
 
     await pool.execute(
-      'INSERT INTO forms (id, share_id, user_id, title, description) VALUES (?, ?, ?, ?, ?)',
-      [formId, shareId, userId, title.trim(), description?.trim() || null]
+      'INSERT INTO forms (id, share_id, user_id, title, description, access_type, restricted_emails) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [
+        formId,
+        shareId,
+        userId,
+        title.trim(),
+        description?.trim() || null,
+        validAccessType,
+        normalizedEmails.length > 0 ? JSON.stringify(normalizedEmails) : null
+      ]
     );
 
     for (let i = 0; i < fields.length; i++) {
@@ -152,7 +171,7 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
 
     return res.status(201).json({
       message: 'Form created successfully',
-      form: { id: formId, shareId, title, description, fieldCount: fields.length }
+      form: { id: formId, shareId, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails, fieldCount: fields.length }
     });
   } catch (error) { next(error); }
 });
@@ -162,7 +181,7 @@ app.get('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT f.id, f.share_id as shareId, f.title, f.description, f.status, f.created_at as createdAt,
+      `SELECT f.id, f.share_id as shareId, f.title, f.description, f.access_type as accessType, f.restricted_emails as restrictedEmails, f.status, f.created_at as createdAt,
               COUNT(DISTINCT s.id) as responseCount,
               COUNT(DISTINCT ff.id) as fieldCount
        FROM forms f
@@ -174,7 +193,12 @@ app.get('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
       [userId]
     );
 
-    return res.json({ forms: rows });
+    const formattedForms = rows.map(f => ({
+      ...f,
+      restrictedEmails: f.restrictedEmails ? (typeof f.restrictedEmails === 'string' ? JSON.parse(f.restrictedEmails) : f.restrictedEmails) : []
+    }));
+
+    return res.json({ forms: formattedForms });
   } catch (error) { next(error); }
 });
 
@@ -185,7 +209,7 @@ app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
     const userId = req.user!.id;
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, share_id as shareId, title, description, status, created_at as createdAt FROM forms WHERE id = ? AND user_id = ?',
+      'SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, status, created_at as createdAt FROM forms WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -207,6 +231,7 @@ app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
     return res.json({
       form: {
         ...form,
+        restrictedEmails: form.restrictedEmails ? (typeof form.restrictedEmails === 'string' ? JSON.parse(form.restrictedEmails) : form.restrictedEmails) : [],
         fields: fields.map(f => ({
           ...f,
           isRequired: Boolean(f.isRequired),
@@ -251,7 +276,7 @@ app.get('/api/forms/:id/responses', authenticate, async (req: AuthRequest, res, 
     );
 
     const [submissions] = await pool.query<RowDataPacket[]>(
-      'SELECT id, submitted_at as submittedAt, submitter_ip as submitterIp FROM form_submissions WHERE form_id = ? ORDER BY submitted_at DESC',
+      'SELECT id, submitted_at as submittedAt, submitter_ip as submitterIp, submitter_email as submitterEmail FROM form_submissions WHERE form_id = ? ORDER BY submitted_at DESC',
       [id]
     );
 
@@ -274,6 +299,7 @@ app.get('/api/forms/:id/responses', authenticate, async (req: AuthRequest, res, 
       id: s.id,
       submittedAt: s.submittedAt,
       submitterIp: s.submitterIp,
+      submitterEmail: s.submitterEmail,
       answers: answersMap[s.id] || {}
     }));
 
@@ -290,7 +316,7 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
   try {
     const { shareId } = req.params;
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, share_id as shareId, title, description, created_at as createdAt FROM forms WHERE share_id = ? AND status = "published"',
+      'SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, created_at as createdAt FROM forms WHERE share_id = ? AND status = "published"',
       [shareId]
     );
 
@@ -310,6 +336,8 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
         shareId: form.shareId,
         title: form.title,
         description: form.description,
+        accessType: form.accessType || 'allow_all',
+        restrictedEmails: form.restrictedEmails ? (typeof form.restrictedEmails === 'string' ? JSON.parse(form.restrictedEmails) : form.restrictedEmails) : [],
         fields: fields.map(f => ({
           ...f,
           isRequired: Boolean(f.isRequired),
@@ -325,10 +353,10 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
 app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
   try {
     const { shareId } = req.params;
-    const { answers } = req.body as { answers?: Record<string, unknown> };
+    const { answers, submitterEmail } = req.body as { answers?: Record<string, unknown>; submitterEmail?: string };
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM forms WHERE share_id = ? AND status = "published"',
+      'SELECT id, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = "published"',
       [shareId]
     );
 
@@ -336,7 +364,45 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
       return res.status(404).json({ message: 'Form not found or is closed for submissions.' });
     }
 
-    const formId = forms[0].id;
+    const form = forms[0];
+    const formId = form.id;
+
+    // Validate submitter email if provided or required
+    let emailToUse = typeof submitterEmail === 'string' ? submitterEmail.trim().toLowerCase() : '';
+    
+    // Also check Bearer token if header present and email wasn't explicitly passed
+    if (!emailToUse && req.headers.authorization?.startsWith('Bearer ')) {
+      try {
+        const payload = jwt.verify(req.headers.authorization.slice(7), jwtSecret) as jwt.JwtPayload;
+        if (typeof payload.email === 'string') {
+          emailToUse = payload.email.trim().toLowerCase();
+        }
+      } catch (e) {}
+    }
+
+    // Access control evaluation
+    const accessType = form.accessType || 'allow_all';
+    const rawRestricted = form.restrictedEmails;
+    const restrictedList: string[] = Array.isArray(rawRestricted)
+      ? rawRestricted.map(e => String(e).trim().toLowerCase())
+      : typeof rawRestricted === 'string'
+      ? (JSON.parse(rawRestricted) as string[]).map(e => String(e).trim().toLowerCase())
+      : [];
+
+    if (!validEmail(emailToUse)) {
+      return res.status(400).json({ message: 'Please enter a valid email address to submit this form.' });
+    }
+
+    if (accessType === 'allow_only') {
+      if (!restrictedList.includes(emailToUse)) {
+        return res.status(403).json({ message: 'You are not authorized to submit this form.' });
+      }
+    } else if (accessType === 'restrict_specific') {
+      if (restrictedList.includes(emailToUse)) {
+        return res.status(403).json({ message: 'You are not authorized to submit this form.' });
+      }
+    }
+
     const [fields] = await pool.query<RowDataPacket[]>(
       'SELECT id, label, is_required as isRequired FROM form_fields WHERE form_id = ?',
       [formId]
@@ -358,8 +424,8 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
     const ip = clientIp(req);
 
     await pool.execute(
-      'INSERT INTO form_submissions (id, form_id, submitter_ip) VALUES (?, ?, ?)',
-      [submissionId, formId, ip]
+      'INSERT INTO form_submissions (id, form_id, submitter_ip, submitter_email) VALUES (?, ?, ?, ?)',
+      [submissionId, formId, ip, emailToUse]
     );
 
     if (answers && typeof answers === 'object') {

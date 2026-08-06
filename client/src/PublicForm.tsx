@@ -12,10 +12,24 @@ interface PublicFormProps {
 export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   const [form, setForm] = useState<Form | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+
+  // Submitter identity state - prefilled from logged-in user if available
+  const [submitterEmail, setSubmitterEmail] = useState(() => {
+    const savedUser = localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u.email) return u.email;
+      } catch (e) {}
+    }
+    return '';
+  });
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [authDenied, setAuthDenied] = useState(false);
 
   useEffect(() => {
     fetchForm();
@@ -24,6 +38,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   const fetchForm = async () => {
     setLoading(true);
     setError('');
+    setAuthDenied(false);
     try {
       const response = await fetch(`${apiUrl}/api/public/forms/${shareId}`);
       const data = (await response.json()) as { form?: Form; message?: string };
@@ -49,6 +64,11 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     e.preventDefault();
     if (!form || !form.fields) return;
 
+    if (!submitterEmail.trim() || !/^\S+@\S+\.\S+$/.test(submitterEmail.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     for (const field of form.fields) {
       if (field.isRequired) {
         const val = answers[field.id];
@@ -65,17 +85,31 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     }
 
     setError('');
+    setAuthDenied(false);
     setSubmitting(true);
+
+    const token = localStorage.getItem('formguard_token') || localStorage.getItem('ember_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     try {
       const response = await fetch(`${apiUrl}/api/public/forms/${shareId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers })
+        headers,
+        body: JSON.stringify({
+          submitterEmail: submitterEmail.trim(),
+          answers
+        })
       });
 
       const data = (await response.json()) as { message?: string };
       if (!response.ok) {
+        if (response.status === 403 || data.message?.includes('authorized')) {
+          setAuthDenied(true);
+          throw new Error('You are not authorized to submit this form.');
+        }
         throw new Error(data.message || 'Failed to submit response.');
       }
 
@@ -90,12 +124,14 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   const handleReset = () => {
     setAnswers({});
     setError('');
+    setAuthDenied(false);
   };
 
   const handleSubmitAnother = () => {
     setAnswers({});
     setSubmitted(false);
     setError('');
+    setAuthDenied(false);
   };
 
   if (loading) {
@@ -149,6 +185,8 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     );
   }
 
+  const isRestricted = form?.accessType && form.accessType !== 'allow_all';
+
   return (
     <div className="public-form-shell">
       <nav className="public-form-nav">
@@ -167,10 +205,57 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
           )}
           <div className="public-form-meta">
             <span>* Indicates required field</span>
+            {isRestricted && (
+              <span className="access-badge-pill">
+                🔒 Restricted Access Form
+              </span>
+            )}
           </div>
         </div>
 
-        {error && <div className="public-alert error">{error}</div>}
+        {/* Submitter Email Verification Card */}
+        <div className="public-card field-card submitter-identity-card">
+          <div className="identity-card-header">
+            <label className="field-label">
+              Your Email Address <span className="required-star">*</span>
+            </label>
+            <span className="identity-help-badge">Required for form submission verification</span>
+          </div>
+
+          <input
+            type="email"
+            placeholder="e.g. name@domain.com"
+            value={submitterEmail}
+            onChange={(e) => setSubmitterEmail(e.target.value)}
+            required
+            className="submitter-email-input"
+          />
+          <div className="field-help-text">
+            {isRestricted
+              ? 'This form has submission access control enabled. Only authorized email IDs can submit.'
+              : 'Your email address will be linked to your response.'}
+          </div>
+        </div>
+
+        {error && (
+          <div className={`public-alert ${authDenied ? 'alert-danger-prominent' : 'error'}`}>
+            {authDenied ? (
+              <div className="auth-denied-box">
+                <div className="denied-icon">🚫</div>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700 }}>
+                    You are not authorized to submit this form.
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '14px' }}>
+                    The email ID (<strong>{submitterEmail || 'provided'}</strong>) does not have permission from the form creator to submit responses for this form.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              error
+            )}
+          </div>
+        )}
 
         {/* Dynamic Fields */}
         {form?.fields?.map((field) => (

@@ -44,6 +44,8 @@ await rootConnection.query(`
     user_id CHAR(36) NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NULL,
+    access_type ENUM('allow_all', 'allow_only', 'restrict_specific') NOT NULL DEFAULT 'allow_all',
+    restricted_emails LONGTEXT NULL,
     status ENUM('published', 'draft') NOT NULL DEFAULT 'published',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -77,6 +79,7 @@ await rootConnection.query(`
     form_id CHAR(36) NOT NULL,
     submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     submitter_ip VARCHAR(45) NULL,
+    submitter_email VARCHAR(255) NULL,
     INDEX idx_submissions_form (form_id),
     CONSTRAINT fk_submissions_form FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
   ) ENGINE=InnoDB
@@ -93,6 +96,17 @@ await rootConnection.query(`
     CONSTRAINT fk_answers_submission FOREIGN KEY (submission_id) REFERENCES form_submissions(id) ON DELETE CASCADE
   ) ENGINE=InnoDB
 `);
+
+// Safe migrations for existing databases
+try {
+  await rootConnection.query(`ALTER TABLE forms ADD COLUMN access_type ENUM('allow_all', 'allow_only', 'restrict_specific') NOT NULL DEFAULT 'allow_all'`);
+} catch (e) {}
+try {
+  await rootConnection.query(`ALTER TABLE forms ADD COLUMN restricted_emails LONGTEXT NULL`);
+} catch (e) {}
+try {
+  await rootConnection.query(`ALTER TABLE form_submissions ADD COLUMN submitter_email VARCHAR(255) NULL`);
+} catch (e) {}
 
 await rootConnection.end();
 console.log(`Database '${databaseName}' is ready.`);
