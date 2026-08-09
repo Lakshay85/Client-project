@@ -2,6 +2,8 @@ import { useState, DragEvent } from 'react';
 import { FIELD_TEMPLATES } from './fieldTemplates';
 import { Icon } from './Icons';
 import { FieldTemplate, FormField, FieldType } from './types';
+import { TiltCard } from './components/TiltCard';
+import { Button3D } from './components/Button3D';
 
 interface FormBuilderProps {
   token: string;
@@ -275,39 +277,45 @@ export function FormBuilder({
   return (
     <div className="form-builder-container">
       {/* Top Header Toolbar */}
-      <header className="builder-header">
-        <div className="header-left">
-          <button className="text-button back-btn" onClick={onBack}>
-            ← Dashboard
-          </button>
-          <div className="builder-title-badge">Form Builder Studio</div>
+      <header className="builder-header" style={{ padding: '16px 24px', background: 'var(--glass-bg-card)', backdropFilter: 'var(--glass-blur-md)', borderBottom: '1px solid var(--glass-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
+            Back
+          </Button3D>
         </div>
 
         <div className="header-center">
-          <div className="mode-toggle">
-            <button
-              className={`toggle-btn ${!isPreview ? 'active' : ''}`}
+          <div className="mode-toggle" style={{ display: 'flex', gap: '6px', background: 'var(--slate-100)', padding: '4px', borderRadius: '12px', border: '1px solid var(--slate-300)' }}>
+            <Button3D
+              variant={!isPreview ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<Icon name="edit" size={15} />}
               onClick={() => setIsPreview(false)}
             >
-              🛠️ Edit Mode
-            </button>
-            <button
-              className={`toggle-btn ${isPreview ? 'active' : ''}`}
+              Edit Studio
+            </Button3D>
+            <Button3D
+              variant={isPreview ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<Icon name="eye" size={15} />}
               onClick={() => setIsPreview(true)}
             >
-              <Icon name="eye" size={15} /> Live Preview
-            </button>
+              3D Live Preview
+            </Button3D>
           </div>
         </div>
 
         <div className="header-right">
-          <button
-            className="coral-button publish-btn"
+          <Button3D
+            variant="primary"
+            size="md"
+            icon={<Icon name="zap" size={15} />}
             onClick={handlePublish}
-            disabled={publishing}
+            loading={publishing}
+            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
           >
-            {publishing ? 'Publishing...' : 'Publish & Share Form'}
-          </button>
+            Publish Form
+          </Button3D>
         </div>
       </header>
 
@@ -491,7 +499,7 @@ export function FormBuilder({
                                   onClick={() => removeEmailTag(email)}
                                   title="Remove email"
                                 >
-                                  ×
+                                  <Icon name="x" size={12} />
                                 </button>
                               </span>
                             ))}
@@ -567,7 +575,7 @@ export function FormBuilder({
                             }}
                             title="Move Up"
                           >
-                            ▲
+                            <Icon name="arrow-up" size={14} />
                           </button>
                           <button
                             type="button"
@@ -579,7 +587,7 @@ export function FormBuilder({
                             }}
                             title="Move Down"
                           >
-                            ▼
+                            <Icon name="arrow-down" size={14} />
                           </button>
                           <button
                             type="button"
@@ -676,15 +684,15 @@ export function FormBuilder({
               {['text', 'textarea', 'password', 'email', 'number', 'tel', 'url', 'search'].includes(
                 selectedField.fieldType
               ) && (
-                <label>
-                  Placeholder Text
-                  <input
-                    type="text"
-                    value={selectedField.placeholder || ''}
-                    onChange={(e) => updateSelectedField({ placeholder: e.target.value })}
-                  />
-                </label>
-              )}
+                  <label>
+                    Placeholder Text
+                    <input
+                      type="text"
+                      value={selectedField.placeholder || ''}
+                      onChange={(e) => updateSelectedField({ placeholder: e.target.value })}
+                    />
+                  </label>
+                )}
 
               <label>
                 Help Text / Subtitle
@@ -720,7 +728,7 @@ export function FormBuilder({
                           updateSelectedField({ options: nextOpts });
                         }}
                       >
-                        ✕
+                        <Icon name="x" size={14} />
                       </button>
                     </div>
                   ))}
@@ -1046,7 +1054,7 @@ export function RenderFieldInput({
               onChange?.(fileName ? `Uploaded: ${fileName}` : '');
             }}
           />
-          {value && <div className="uploaded-file-name">📄 {value}</div>}
+          {value && <div className="uploaded-file-name" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon name="file" size={14} /> {value}</div>}
         </div>
       );
 

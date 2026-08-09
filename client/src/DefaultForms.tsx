@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { DEFAULT_FORM_TEMPLATES, DefaultFormTemplate } from './defaultFormsData';
 import { FormField } from './types';
 import { Icon } from './Icons';
+import { TiltCard } from './components/TiltCard';
+import { Button3D } from './components/Button3D';
+import { TemplateCard } from './components/TemplateCard';
 
 interface DefaultFormsProps {
   onBack: () => void;
@@ -164,88 +167,108 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
   return (
     <div className="default-forms-page">
       {/* Header Toolbar */}
-      <header className="default-forms-header">
-        <div className="header-left">
-          <button className="text-button back-btn" onClick={onBack}>
-            ← Dashboard
-          </button>
+      <header
+        className="default-forms-header"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
+          borderRadius: '24px',
+          padding: '28px 32px',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          color: '#ffffff',
+          marginBottom: '28px',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)'
+        }}
+      >
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack} style={{ color: '#94a3b8' }}>
+            Back to Dashboard
+          </Button3D>
           <div>
-            <h1>Pre-Built Default Forms Library</h1>
-            <p>Pick any ready-to-use template below to instantly preview, customize & publish your form.</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', letterSpacing: '-0.01em' }}>Pre-Built 3D Form Templates Gallery</h1>
+            <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px' }}>Select any production-grade template to preview interactively, edit questions, or deploy live.</p>
           </div>
         </div>
       </header>
 
       {/* Filter and Search Bar */}
-      <div className="default-forms-controls card">
-        <div className="search-box">
-          <Icon name="search" size={18} />
+      <div
+        className="default-forms-controls card"
+        style={{
+          padding: '20px',
+          borderRadius: '24px',
+          background: 'linear-gradient(145deg, #0e172a 0%, #070c18 100%)',
+          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+          marginBottom: '30px',
+          boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)'
+        }}
+      >
+        <div
+          className="search-box"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'rgba(255, 255, 255, 0.06)',
+            padding: '12px 18px',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.12)'
+          }}
+        >
+          <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+            <Icon name="search" size={18} />
+          </span>
           <input
             type="text"
-            placeholder="Search default forms by title or keyword..."
+            placeholder="Search templates by title, keyword or question type..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: '#ffffff', fontWeight: 500 }}
           />
           {searchTerm && (
-            <button className="clear-search-btn" onClick={() => setSearchTerm('')}>
-              ×
+            <button className="clear-search-btn" onClick={() => setSearchTerm('')} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+              <Icon name="x" size={14} />
             </button>
           )}
         </div>
 
-        <div className="category-tabs">
-          {['all', 'Feedback', 'Events', 'HR', 'Contact', 'Product'].map((cat) => (
-            <button
-              key={cat}
-              className={`cat-tab ${categoryFilter.toLowerCase() === cat.toLowerCase() ? 'active' : ''}`}
-              onClick={() => setCategoryFilter(cat)}
-            >
-              {cat === 'all' ? 'All Templates' : cat}
-            </button>
-          ))}
+        <div className="category-tabs" style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+          {['all', 'Feedback', 'Events', 'HR', 'Contact', 'Product'].map((cat) => {
+            const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase();
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                style={{
+                  background: isSelected
+                    ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
+                    : 'rgba(255, 255, 255, 0.08)',
+                  color: isSelected ? '#ffffff' : '#e2e8f0',
+                  border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '20px',
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: isSelected ? 800 : 600,
+                  cursor: 'pointer',
+                  boxShadow: isSelected ? '0 4px 14px rgba(6, 182, 212, 0.4)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {cat === 'all' ? 'All Templates' : cat}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Templates Grid */}
-      <div className="default-forms-grid">
+      {/* 3D Templates Grid */}
+      <div className="default-forms-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
         {filteredTemplates.map((template) => (
-          <article key={template.id} className="card default-template-card">
-            <div className="template-card-header">
-              <div className="template-icon-wrapper">
-                <Icon name={template.icon} size={24} />
-              </div>
-              <span className="template-badge">{template.badge}</span>
-            </div>
-
-            <h3 className="template-title">{template.title}</h3>
-            <p className="template-desc">{template.description}</p>
-
-            <div className="template-fields-summary">
-              <span className="summary-title">Form Questions ({template.fields.length}):</span>
-              <div className="fields-tag-list">
-                {template.fields.map((f) => (
-                  <span key={f.id} className="field-type-pill">
-                    {f.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="template-card-actions">
-              <button
-                className="text-button btn-sm"
-                onClick={() => handleOpenPreview(template)}
-              >
-                <Icon name="eye" size={14} /> Preview Form
-              </button>
-              <button
-                className="coral-button btn-sm"
-                onClick={() => onUseTemplate(template)}
-              >
-                <Icon name="plus" size={14} /> Use This Form
-              </button>
-            </div>
-          </article>
+          <TemplateCard
+            key={template.id}
+            template={template}
+            onPreview={handleOpenPreview}
+            onUseTemplate={onUseTemplate}
+          />
         ))}
       </div>
 
@@ -270,10 +293,10 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
               </div>
               <button
                 className="clear-search-btn"
-                style={{ fontSize: '24px', cursor: 'pointer' }}
+                style={{ cursor: 'pointer' }}
                 onClick={() => setPreviewTemplate(null)}
               >
-                ×
+                <Icon name="x" size={20} />
               </button>
             </div>
 

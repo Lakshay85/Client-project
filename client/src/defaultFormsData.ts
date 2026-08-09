@@ -248,7 +248,7 @@ export const DEFAULT_FORM_TEMPLATES: DefaultFormTemplate[] = [
         label: 'Overall Rating',
         fieldType: 'select',
         isRequired: true,
-        options: ['⭐⭐⭐⭐⭐ 5 Stars - Outstanding', '⭐⭐⭐⭐ 4 Stars - Very Good', '⭐⭐⭐ 3 Stars - Average', '⭐⭐ 2 Stars - Needs Work', '⭐ 1 Star - Poor'],
+        options: ['5 Stars - Outstanding', '4 Stars - Very Good', '3 Stars - Average', '2 Stars - Needs Work', '1 Star - Poor'],
         sortOrder: 1
       },
       {

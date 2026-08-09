@@ -8,6 +8,11 @@ import { Icon } from './Icons';
 import { PublicForm } from './PublicForm';
 import { Form, FormField } from './types';
 import { DefaultFormTemplate } from './defaultFormsData';
+import { TiltCard } from './components/TiltCard';
+import { Button3D } from './components/Button3D';
+import { LandingPage3D } from './components/LandingPage3D';
+import { BrandLogo3D } from './components/BrandLogo3D';
+import { ActiveFormCard } from './components/ActiveFormCard';
 import './styles.css';
 
 type AppView =
@@ -18,7 +23,9 @@ type AppView =
   | 'builder'
   | 'responses-list'
   | 'responses-detail'
-  | 'default-forms';
+  | 'default-forms'
+  | 'analytics'
+  | 'settings';
 
 type User = { id: string; name: string; email: string };
 
@@ -264,300 +271,315 @@ function App() {
     );
   }
 
-  return (
-    <main className="app-shell">
-      {copiedToast && (
-        <div className="toast-notification">
-          <Icon name="check" size={18} /> Link copied to clipboard!
-        </div>
-      )}
+  if (user) {
+    return (
+      <div className="app-sidebar-layout">
+        {copiedToast && (
+          <div className="toast-notification">
+            <Icon name="check" size={18} /> Link copied to clipboard!
+          </div>
+        )}
 
-      {/* Top Navigation Header */}
-      <nav className="top-nav">
-        <a className="brand" onClick={() => setView(user ? 'dashboard' : 'home')}>
-          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" />
-          form<span>Enclave</span>
-        </a>
+        {/* Left Vertical Sidebar Navigation */}
+        <aside className="sidebar-shell">
+          <div>
+            {/* Sidebar Brand Header with Transparent Logo */}
+            <div style={{ padding: '16px 20px 24px' }}>
+              <BrandLogo3D logoSize={46} fontSize="22px" onClick={() => setView('dashboard')} />
+            </div>
 
-
-        <div className="nav-actions">
-          {user ? (
-            <>
+            {/* Sidebar Menu Items */}
+            <nav className="sidebar-menu-list">
               <button
-                className={`nav-link ${view === 'dashboard' ? 'active' : ''}`}
+                className={`sidebar-menu-item ${view === 'dashboard' ? 'active' : ''}`}
                 onClick={() => setView('dashboard')}
               >
-                My Forms
+                <Icon name="grid" size={18} />
+                <span>Dashboard</span>
               </button>
               <button
-                className={`nav-link ${view === 'responses-list' || view === 'responses-detail' ? 'active' : ''}`}
-                onClick={() => setView('responses-list')}
-              >
-                Responses
-              </button>
-              <button
-                className={`nav-link ${view === 'default-forms' ? 'active' : ''}`}
+                className={`sidebar-menu-item ${view === 'default-forms' ? 'active' : ''}`}
                 onClick={() => setView('default-forms')}
               >
-                Default Forms
+                <Icon name="textarea" size={18} />
+                <span>My Forms</span>
               </button>
-              <button className="coral-button" onClick={startNewBlankForm}>
-                <Icon name="plus" size={16} /> Build New Form
+              <button
+                className={`sidebar-menu-item ${view === 'responses-list' || view === 'responses-detail' || view === 'analytics' ? 'active' : ''}`}
+                onClick={() => setView('responses-list')}
+              >
+                <Icon name="chart" size={18} />
+                <span>Analytics</span>
               </button>
-              <span className="welcome">Hi, {user.name.split(' ')[0]}</span>
-              <button className="text-button" onClick={signOut}>
-                Sign out
+              <button
+                className={`sidebar-menu-item ${view === 'settings' ? 'active' : ''}`}
+                onClick={() => setView('settings')}
+              >
+                <Icon name="settings" size={18} />
+                <span>Settings</span>
               </button>
-            </>
-          ) : (
-            <>
-              <button className="text-button" onClick={() => setView('login')}>
-                Log in
-              </button>
-              <button className="dark-button" onClick={() => setView('signup')}>
-                Get started →
-              </button>
-            </>
+            </nav>
+          </div>
+
+          {/* Sidebar Bottom User Profile */}
+          <div className="sidebar-user-footer">
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-avatar">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="sidebar-user-name">{user.name.split(' ')[0]}</span>
+            </div>
+            <Button3D variant="ghost" size="sm" onClick={signOut} title="Sign out">
+              <Icon name="logout" size={16} />
+            </Button3D>
+          </div>
+        </aside>
+
+        {/* Right Workspace Main Content Area */}
+        <main className="workspace-main-area">
+          {/* Top Header Bar */}
+          {view !== 'dashboard' && (
+            <header className="top-header-bar">
+              <h1 className="top-header-title">
+                {view === 'default-forms'
+                  ? 'Templates Gallery'
+                  : view === 'responses-list' || view === 'responses-detail' || view === 'analytics'
+                    ? 'Analytics Hub'
+                    : view === 'settings'
+                      ? 'Portal Settings'
+                      : 'Overview'}
+              </h1>
+              <Button3D
+                variant="primary"
+                size="md"
+                icon={<Icon name="plus" size={18} />}
+                onClick={startNewBlankForm}
+                style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
+              >
+                Build New Form
+              </Button3D>
+            </header>
           )}
-        </div>
-      </nav>
 
-      {/* Main Content Area based on View */}
-      {user && view === 'dashboard' && (
-        <div className="dashboard-content">
-          <header className="dashboard-hero">
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div className="hero-glass-badge">
-                <span className="live-dot"></span>
-                Form Builder Studio 2.0
-              </div>
-              <h1>Custom Form Builder Studio</h1>
-              <p>Build, publish, and collect form submissions with professional drag-and-drop elements.</p>
-            </div>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
-              <button className="coral-button" onClick={startNewBlankForm}>
-                <Icon name="plus" size={18} /> Build New Form
-              </button>
-              <button className="dark-button" onClick={() => setView('default-forms')}>
-                <Icon name="grid" size={18} /> Default Forms
-              </button>
-            </div>
-          </header>
+          <div className="workspace-content-body">
+            {/* Dashboard View */}
+            {view === 'dashboard' && (
+              <div className="dashboard-content">
+                {/* Hero Banner */}
+                <header className="dashboard-hero" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', borderRadius: 'var(--radius-xl)', padding: '40px 32px', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', marginBottom: '28px', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)' }}>
+                  <div style={{ position: 'relative', zIndex: 2 }}>
+                    <div className="hero-glass-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#22d3ee', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '16px' }}>
+                      <span className="live-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#06b6d4', boxShadow: '0 0 8px #06b6d4' }}></span>
+                      FORM ENCLAVE STUDIO 3D • ACTIVE WORKSPACE
+                    </div>
+                    <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 12px', color: '#ffffff', letterSpacing: '-0.02em' }}>Interactive Form Engine</h1>
+                    <p style={{ fontSize: '15px', color: '#94a3b8', margin: '0 0 24px', maxWidth: '650px', lineHeight: 1.5 }}>
+                      Build high-converting multi-step forms with email access control, real-time analytics, and 3D preview.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
+                    <Button3D variant="primary" size="md" icon={<Icon name="plus" size={18} />} onClick={startNewBlankForm} style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}>
+                      Build New Form
+                    </Button3D>
+                    <Button3D variant="secondary" size="md" icon={<Icon name="grid" size={18} />} onClick={() => setView('default-forms')}>
+                      Explore Templates
+                    </Button3D>
+                  </div>
+                </header>
 
-          <section className="forms-grid-section">
-            <div className="section-title">
-              <h2>Your Form Workspace</h2>
-              <span className="count-badge">{forms.length} Forms</span>
-            </div>
-
-            {fetchingForms ? (
-              <div className="card loading-card">
-                <div className="spinner"></div>
-                <p>Loading workspace forms...</p>
-              </div>
-            ) : forms.length === 0 ? (
-              <div className="card empty-forms-card">
-                <div className="empty-icon-box">
-                  <Icon name="textarea" size={32} />
-                </div>
-                <h3>No forms created yet</h3>
-                <p>Click "Build New Form" or pick a pre-built "Default Form" to start in seconds.</p>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                  <button className="coral-button" onClick={startNewBlankForm}>
-                    <Icon name="plus" size={18} /> Build New Form
-                  </button>
-                  <button className="dark-button" onClick={() => setView('default-forms')}>
-                    <Icon name="grid" size={18} /> Default Forms
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="forms-grid">
-                {forms.map((form) => {
-                  const shareUrl = `${window.location.origin}/?form=${form.shareId}`;
-                  const restrictedCount = form.restrictedEmails?.length || 0;
-                  const accessBadgeLabel =
-                    form.accessType === 'allow_only'
-                      ? `🔒 Whitelisted (${restrictedCount} emails)`
-                      : form.accessType === 'restrict_specific'
-                      ? `🚫 Blacklisted (${restrictedCount} emails)`
-                      : `🌐 Public Access`;
-
-                  return (
-                    <article key={form.id} className="card form-summary-card">
-                      <div>
-                        <div className="card-top">
-                          <div className="form-card-icon-box">
-                            <Icon name="textarea" size={22} />
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <span className={`access-status-badge ${form.accessType || 'allow_all'}`}>
-                              {accessBadgeLabel}
-                            </span>
-                            <span className="form-status-badge">{form.status}</span>
-                          </div>
-                        </div>
-
-                        <h3 className="form-card-title">{form.title}</h3>
-                        <p className="form-card-desc">
-                          {form.description || 'No description provided.'}
-                        </p>
+                {/* Summary Metric Cards */}
+                <div className="metrics-summary-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                  <TiltCard glowColor="rgba(79, 70, 229, 0.15)" maxRotateX={6} maxRotateY={6}>
+                    <div style={{ padding: '24px', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-500)', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL FORMS</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--slate-900)', margin: '6px 0 4px' }}>{forms.length}</div>
+                      <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Icon name="zap" size={14} /> <span>Active in Workspace</span>
                       </div>
+                    </div>
+                  </TiltCard>
+                  <TiltCard glowColor="rgba(139, 92, 246, 0.15)" maxRotateX={6} maxRotateY={6}>
+                    <div style={{ padding: '24px', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-500)', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL SUBMISSIONS</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--slate-900)', margin: '6px 0 4px' }}>
+                        {forms.reduce((acc, f) => acc + (f.responseCount || 0), 0)}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Icon name="trending-up" size={14} /> <span>Submissions Collected</span>
+                      </div>
+                    </div>
+                  </TiltCard>
+                  <TiltCard glowColor="rgba(245, 158, 11, 0.15)" maxRotateX={6} maxRotateY={6}>
+                    <div style={{ padding: '24px', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-500)', fontWeight: 700, letterSpacing: '0.05em' }}>RESTRICTED FORMS</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--slate-900)', margin: '6px 0 4px' }}>
+                        {forms.filter((f) => f.accessType && f.accessType !== 'allow_all').length}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Icon name="lock" size={14} /> <span>Email Access Protection</span>
+                      </div>
+                    </div>
+                  </TiltCard>
+                </div>
 
-                      <div>
-                        <div className="form-card-stats">
-                          <span className="stat-item">
-                            <Icon name="users" size={15} /> {form.responseCount || 0} Registered Users
-                          </span>
-                          <span className="stat-item">
-                            <Icon name="select" size={15} /> {form.fieldCount || 0} Fields
-                          </span>
+                {/* Active Forms Section */}
+                <section className="forms-grid-section">
+                  <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.01em' }}>Your Active Forms</h2>
+                    <span className="count-badge" style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: '#e2e8f0', color: '#1e293b', fontWeight: 700 }}>
+                      {forms.length} Forms
+                    </span>
+                  </div>
+
+                  {fetchingForms ? (
+                    <div className="card loading-card" style={{ padding: '40px', textAlign: 'center' }}>
+                      <div className="spinner"></div>
+                      <p>Syncing workspace forms...</p>
+                    </div>
+                  ) : forms.length === 0 ? (
+                    <TiltCard maxRotateX={6} maxRotateY={8}>
+                      <div className="empty-forms-card" style={{ padding: '40px', textAlign: 'center', background: '#0f172a', borderRadius: '24px', border: '1.5px solid rgba(255, 255, 255, 0.15)' }}>
+                        <div className="empty-icon-box" style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06b6d4' }}>
+                          <Icon name="textarea" size={32} />
                         </div>
-
-                        <div className="form-card-actions">
-                          <button
-                            className="dark-button btn-sm"
-                            onClick={() => copyShareLink(form.shareId)}
-                            title="Copy Public Link"
-                          >
-                            <Icon name="copy" size={14} /> Copy Link
-                          </button>
-                          <button
-                            className="text-button btn-sm"
-                            onClick={() => editExistingForm(form)}
-                            title="Edit Form & Access Settings"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            className="text-button btn-sm"
-                            onClick={() => {
-                              setSelectedFormId(form.id);
-                              setView('responses-detail');
-                            }}
-                          >
-                            <Icon name="users" size={14} /> Responses ({form.responseCount || 0})
-                          </button>
-                          <a
-                            className="text-button btn-sm"
-                            href={shareUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Icon name="eye" size={14} /> Preview
-                          </a>
-                          <button
-                            className="text-button btn-sm delete-btn"
-                            onClick={() => deleteForm(form.id)}
-                            title="Delete Form"
-                          >
-                            <Icon name="trash" size={14} />
-                          </button>
+                        <h3 style={{ fontSize: '20px', fontWeight: 700, margin: '0 0 8px', color: '#ffffff' }}>No forms created yet</h3>
+                        <p style={{ color: '#94a3b8', margin: 0 }}>Click "Build New Form" or pick a template to start in seconds.</p>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+                          <Button3D variant="primary" size="md" icon={<Icon name="plus" size={18} />} onClick={startNewBlankForm}>
+                            Build New Form
+                          </Button3D>
+                          <Button3D variant="secondary" size="md" icon={<Icon name="grid" size={18} />} onClick={() => setView('default-forms')}>
+                            Explore Templates
+                          </Button3D>
                         </div>
                       </div>
-                    </article>
-                  );
-                })}
+                    </TiltCard>
+                  ) : (
+                    <div className="forms-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                      {forms.map((form) => (
+                        <ActiveFormCard
+                          key={form.id}
+                          form={form}
+                          onCopyLink={copyShareLink}
+                          onEdit={editExistingForm}
+                          onDelete={deleteForm}
+                          onViewResponses={(formId) => {
+                            setSelectedFormId(formId);
+                            setView('responses-detail');
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             )}
-          </section>
-        </div>
-      )}
 
-      {/* Responses Hub View */}
-      {user && view === 'responses-list' && (
-        <div className="dashboard-content">
-          <ResponsesOverview
-            forms={forms}
-            fetching={fetchingForms}
-            onSelectFormResponses={(formId) => {
-              setSelectedFormId(formId);
-              setView('responses-detail');
-            }}
-            onBackToDashboard={() => setView('dashboard')}
-            onCreateNewForm={startNewBlankForm}
-          />
-        </div>
-      )}
-
-      {/* Default Forms Library View */}
-      {user && view === 'default-forms' && (
-        <div className="dashboard-content">
-          <DefaultForms
-            onBack={() => setView('dashboard')}
-            onUseTemplate={useDefaultTemplate}
-          />
-        </div>
-      )}
-
-      {/* Public Landing Home View */}
-      {(!user || view === 'home') && !user && (
-        <section className="dashboard-content">
-          <div className="dashboard-hero">
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div className="hero-glass-badge">
-                <span className="live-dot"></span>
-                Next-Gen Glassmorphic Form Engine
-              </div>
-              <h1>Build forms that anyone can fill.</h1>
-              <p>Create custom forms with rich input fields: text, text area, dates, calendar, options, and color pickers. Share your form link instantly!</p>
-              <div style={{ marginTop: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
-                <button className="coral-button" onClick={() => setView('signup')}>
-                  Get started free →
-                </button>
-                <button className="text-button" style={{ color: '#fff' }} onClick={() => setView('login')}>
-                  Log in to your account
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Share Modal Dialog */}
-      {shareModalShareId && (
-        <div className="modal-backdrop">
-          <div className="card modal-card">
-            <div className="modal-icon-badge">
-              <Icon name="check" size={28} />
-            </div>
-            <h2>Form Published Successfully!</h2>
-            <p>Your form is now live and ready to accept responses from anyone with the link.</p>
-
-            <div className="share-link-box">
-              <input
-                type="text"
-                readOnly
-                value={`${window.location.origin}/?form=${shareModalShareId}`}
+            {/* Responses Hub View */}
+            {(view === 'responses-list' || view === 'analytics') && (
+              <ResponsesOverview
+                forms={forms}
+                fetching={fetchingForms}
+                onSelectFormResponses={(formId) => {
+                  setSelectedFormId(formId);
+                  setView('responses-detail');
+                }}
+                onBackToDashboard={() => setView('dashboard')}
+                onCreateNewForm={startNewBlankForm}
               />
-              <button
-                className="coral-button"
-                onClick={() => copyShareLink(shareModalShareId)}
-              >
-                Copy Link
-              </button>
-            </div>
+            )}
 
-            <div className="modal-actions">
-              <a
-                className="dark-button"
-                href={`${window.location.origin}/?form=${shareModalShareId}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Icon name="eye" size={16} /> Open Form Link ↗
-              </a>
-              <button
-                className="text-button"
-                onClick={() => setShareModalShareId(null)}
-              >
-                Close & Return to Dashboard
-              </button>
-            </div>
+            {/* Default Forms Library View */}
+            {view === 'default-forms' && (
+              <DefaultForms
+                onBack={() => setView('dashboard')}
+                onUseTemplate={useDefaultTemplate}
+              />
+            )}
+
+            {/* Settings View Placeholder */}
+            {view === 'settings' && (
+              <TiltCard maxRotateX={4} maxRotateY={4}>
+                <div style={{ padding: '36px', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name="settings" size={24} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 4px', color: '#000000' }}>Portal & Account Settings</h2>
+                      <p style={{ margin: 0, color: '#1e293b', fontSize: '14px' }}>Manage workspace permissions, API tokens, and user profile preferences.</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '16px', maxWidth: '500px' }}>
+                    <div style={{ padding: '16px', border: '1px solid var(--slate-200)', borderRadius: '12px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Account Email</div>
+                      <div style={{ color: 'var(--slate-600)', fontSize: '14px' }}>{user.email}</div>
+                    </div>
+                    <div style={{ padding: '16px', border: '1px solid var(--slate-200)', borderRadius: '12px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Full Name</div>
+                      <div style={{ color: 'var(--slate-600)', fontSize: '14px' }}>{user.name}</div>
+                    </div>
+                    <div style={{ padding: '16px', border: '1px solid var(--slate-200)', borderRadius: '12px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Google OAuth Status</div>
+                      <div style={{ color: '#10b981', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Icon name="check" size={14} /> Authenticated & Connected
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TiltCard>
+            )}
           </div>
-        </div>
-      )}
-    </main>
+        </main>
+
+        {/* 3D Glass Share Modal Dialog */}
+        {shareModalShareId && (
+          <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(10, 13, 20, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+            <TiltCard maxRotateX={8} maxRotateY={8} glowColor="rgba(79, 70, 229, 0.4)">
+              <div className="modal-card" style={{ padding: '36px', width: '100%', maxWidth: '480px', textAlign: 'center', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <div className="modal-icon-badge" style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', margin: '0 auto 20px', boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)' }}>
+                  <Icon name="check" size={32} />
+                </div>
+                <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 8px' }}>Form Published Successfully!</h2>
+                <p style={{ color: 'var(--slate-600)', fontSize: '14px', margin: '0 0 24px' }}>Your form is live and ready to collect responses from users.</p>
+
+                <div className="share-link-box" style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--slate-100)', padding: '6px', borderRadius: '12px', border: '1px solid var(--slate-300)' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/?form=${shareModalShareId}`}
+                    style={{ flex: 1, border: 'none', background: 'transparent', padding: '8px 12px', fontSize: '13px', color: 'var(--slate-800)', fontWeight: 600, outline: 'none' }}
+                  />
+                  <Button3D variant="primary" size="sm" onClick={() => copyShareLink(shareModalShareId)}>
+                    Copy Link
+                  </Button3D>
+                </div>
+
+                <div className="modal-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <a href={`${window.location.origin}/?form=${shareModalShareId}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                    <Button3D variant="secondary" size="md" style={{ width: '100%' }}>
+                      <Icon name="external-link" size={16} /> Open Public Form
+                    </Button3D>
+                  </a>
+                  <Button3D variant="ghost" size="md" onClick={() => setShareModalShareId(null)}>
+                    Return to Dashboard
+                  </Button3D>
+                </div>
+              </div>
+            </TiltCard>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Public Landing Home View (for non-authenticated users)
+  return (
+    <LandingPage3D
+      onLogin={() => setView('login')}
+      onSignup={() => setView('signup')}
+    />
   );
 }
 
@@ -585,8 +607,8 @@ function AuthPage({
           form<span>Enclave</span>
         </a>
 
-        <button className="text-button back-home-btn" onClick={() => onMode('home')}>
-          ← Back home
+        <button className="text-button back-home-btn" onClick={() => onMode('home')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <Icon name="arrow-left" size={16} /> Back home
         </button>
       </nav>
 
@@ -618,21 +640,21 @@ function AuthPage({
 
             <div className="auth-features-list">
               <div className="feature-item">
-                <div className="feature-icon">✨</div>
+                <div className="feature-icon"><Icon name="sparkles" size={18} /></div>
                 <div>
                   <strong>Drag & Drop Form Builder</strong>
                   <span>Build forms with 18+ rich input fields, pickers & options.</span>
                 </div>
               </div>
               <div className="feature-item">
-                <div className="feature-icon">🔒</div>
+                <div className="feature-icon"><Icon name="lock" size={18} /></div>
                 <div>
                   <strong>Email Access Control</strong>
                   <span>Restrict form submissions by specific user email IDs or domain rules.</span>
                 </div>
               </div>
               <div className="feature-item">
-                <div className="feature-icon">📊</div>
+                <div className="feature-icon"><Icon name="chart" size={18} /></div>
                 <div>
                   <strong>Analytics & CSV Exports</strong>
                   <span>Inspect responses, view breakdowns & download formatted CSV reports.</span>
@@ -744,7 +766,7 @@ function AuthPage({
               {error && <div className="form-error auth-error-alert">{error}</div>}
 
               <button className="coral-button form-submit-btn" disabled={loading}>
-                {loading ? 'Please wait…' : signup ? 'Create Account →' : 'Log In to Workspace →'}
+                {loading ? 'Please wait…' : signup ? 'Create Account' : 'Log In to Workspace'}
               </button>
             </form>
 

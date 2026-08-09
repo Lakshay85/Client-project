@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icons';
 import { FormField, FormSubmission } from './types';
+import { TiltCard } from './components/TiltCard';
+import { Button3D } from './components/Button3D';
 
 interface FormResponsesProps {
   formId: string;
@@ -112,18 +114,18 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   return (
     <div className="responses-container">
       {/* Header Toolbar */}
-      <header className="responses-header">
-        <div className="header-left">
-          <button className="text-button back-btn" onClick={onBack}>
-            ← Dashboard
-          </button>
+      <header className="responses-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
+            Back
+          </Button3D>
           <div>
-            <h1>{formTitle}</h1>
-            <div className="responses-meta-subtitle">
+            <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px', color: '#ffffff' }}>{formTitle}</h1>
+            <div className="responses-meta-subtitle" style={{ fontSize: '13px', color: 'var(--slate-500)', fontWeight: 600 }}>
               <span>{submissions.length} Total Submissions</span>
               {submissions.length > 0 && (
                 <span>
-                  • Latest response:{' '}
+                  {' '}• Latest:{' '}
                   {new Date(submissions[0].submittedAt).toLocaleString(undefined, {
                     dateStyle: 'short',
                     timeStyle: 'short'
@@ -134,48 +136,56 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           </div>
         </div>
 
-        <div className="header-actions">
-          <div className="view-switch">
-            <button
-              className={`switch-btn ${viewMode === 'summary' ? 'active' : ''}`}
+        <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="view-switch" style={{ display: 'flex', gap: '4px', background: 'var(--slate-100)', padding: '4px', borderRadius: '12px', border: '1px solid var(--slate-300)' }}>
+            <Button3D
+              variant={viewMode === 'summary' ? 'primary' : 'ghost'}
+              size="sm"
               onClick={() => setViewMode('summary')}
             >
-              <Icon name="chart" size={14} /> Question Summary
-            </button>
-            <button
-              className={`switch-btn ${viewMode === 'table' ? 'active' : ''}`}
+              Summary
+            </Button3D>
+            <Button3D
+              variant={viewMode === 'table' ? 'primary' : 'ghost'}
+              size="sm"
               onClick={() => setViewMode('table')}
             >
-              Submissions Table
-            </button>
-            <button
-              className={`switch-btn ${viewMode === 'cards' ? 'active' : ''}`}
+              Table View
+            </Button3D>
+            <Button3D
+              variant={viewMode === 'cards' ? 'primary' : 'ghost'}
+              size="sm"
               onClick={() => setViewMode('cards')}
             >
-              Individual Inspector
-            </button>
+              Individual
+            </Button3D>
           </div>
 
-          <button
-            className="dark-button export-btn"
+          <Button3D
+            variant="primary"
+            size="md"
+            icon={<Icon name="download" size={15} />}
             onClick={exportCSV}
             disabled={submissions.length === 0}
+            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
           >
             Export CSV
-          </button>
+          </Button3D>
         </div>
       </header>
 
       {error && <div className="form-error">{error}</div>}
 
       {submissions.length === 0 ? (
-        <div className="card empty-responses-card">
-          <div className="empty-icon-box">
-            <Icon name="email" size={32} />
+        <TiltCard maxRotateX={6} maxRotateY={6}>
+          <div className="empty-responses-card" style={{ padding: '48px', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Icon name="email" size={32} />
+            </div>
+            <h2>No Submissions Yet</h2>
+            <p style={{ color: 'var(--slate-500)' }}>Share your public form link with users to start receiving responses.</p>
           </div>
-          <h2>No Submissions Yet</h2>
-          <p>Share your form link with respondents to start gathering entries.</p>
-        </div>
+        </TiltCard>
       ) : viewMode === 'summary' ? (
         <div className="summary-view-grid">
           <div className="metrics-banner">
@@ -348,8 +358,9 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               className="text-button"
               disabled={selectedIndex === 0}
               onClick={() => setSelectedIndex((prev) => prev - 1)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              ← Previous Response
+              <Icon name="arrow-left" size={14} /> Previous Response
             </button>
             <span>
               Response {selectedIndex + 1} of {submissions.length}
@@ -358,8 +369,9 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               className="text-button"
               disabled={selectedIndex === submissions.length - 1}
               onClick={() => setSelectedIndex((prev) => prev + 1)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              Next Response →
+              Next Response <Icon name="arrow-right" size={14} />
             </button>
           </div>
 
