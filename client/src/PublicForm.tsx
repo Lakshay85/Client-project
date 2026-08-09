@@ -15,7 +15,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
   // Submitter identity state - prefilled from logged-in user if available
   const [submitterEmail, setSubmitterEmail] = useState(() => {
-    const savedUser = localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
+    const savedUser = localStorage.getItem('formenclave_user') || localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
@@ -64,8 +64,8 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     e.preventDefault();
     if (!form || !form.fields) return;
 
-    if (!submitterEmail.trim() || !/^\S+@\S+\.\S+$/.test(submitterEmail.trim())) {
-      setError('Please enter a valid email address.');
+    if (isRestricted && (!submitterEmail.trim() || !/^\S+@\S+\.\S+$/.test(submitterEmail.trim()))) {
+      setError('Please enter a valid email address for access permission verification.');
       return;
     }
 
@@ -88,7 +88,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     setAuthDenied(false);
     setSubmitting(true);
 
-    const token = localStorage.getItem('formguard_token') || localStorage.getItem('ember_token');
+    const token = localStorage.getItem('formenclave_token') || localStorage.getItem('formguard_token') || localStorage.getItem('ember_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -192,7 +192,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
       <nav className="public-form-nav">
         <a className="brand" onClick={onHomeClick}>
           <div className="brand-logo-icon">F</div>
-          form<span>Guard</span>
+          form<span>Enclave</span>
         </a>
       </nav>
 
@@ -213,29 +213,29 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
           </div>
         </div>
 
-        {/* Submitter Email Verification Card */}
-        <div className="public-card field-card submitter-identity-card">
-          <div className="identity-card-header">
-            <label className="field-label">
-              Your Email Address <span className="required-star">*</span>
-            </label>
-            <span className="identity-help-badge">Required for form submission verification</span>
-          </div>
+        {/* Submitter Email Verification Card (Only required for Restricted Access Forms) */}
+        {isRestricted && (
+          <div className="public-card field-card submitter-identity-card">
+            <div className="identity-card-header">
+              <label className="field-label">
+                Security Verification: Your Email Address <span className="required-star">*</span>
+              </label>
+              <span className="identity-help-badge">Required for permission verification</span>
+            </div>
 
-          <input
-            type="email"
-            placeholder="e.g. name@domain.com"
-            value={submitterEmail}
-            onChange={(e) => setSubmitterEmail(e.target.value)}
-            required
-            className="submitter-email-input"
-          />
-          <div className="field-help-text">
-            {isRestricted
-              ? 'This form has submission access control enabled. Only authorized email IDs can submit.'
-              : 'Your email address will be linked to your response.'}
+            <input
+              type="email"
+              placeholder="e.g. name@domain.com"
+              value={submitterEmail}
+              onChange={(e) => setSubmitterEmail(e.target.value)}
+              required
+              className="submitter-email-input"
+            />
+            <div className="field-help-text">
+              This form has submission access control enabled. Only authorized email IDs allowed by the form creator can submit.
+            </div>
           </div>
-        </div>
+        )}
 
         {error && (
           <div className={`public-alert ${authDenied ? 'alert-danger-prominent' : 'error'}`}>

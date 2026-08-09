@@ -49,6 +49,7 @@ export interface Form {
   status: 'published' | 'draft';
   accessType?: AccessType;
   restrictedEmails?: string[];
+  isRestricted?: boolean;
   createdAt: string;
   fields?: FormField[];
   responseCount?: number;

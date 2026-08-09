@@ -239,7 +239,7 @@ export const DEFAULT_FORM_TEMPLATES: DefaultFormTemplate[] = [
         id: crypto.randomUUID(),
         label: 'Product / Service Reviewed',
         fieldType: 'text',
-        placeholder: 'FormGuard Studio Pro',
+        placeholder: 'Form Enclave Studio Pro',
         isRequired: true,
         sortOrder: 0
       },

@@ -8,6 +8,7 @@ interface FormBuilderProps {
   apiUrl: string;
   onBack: () => void;
   onFormCreated: (shareId: string) => void;
+  formId?: string;
   initialTitle?: string;
   initialDescription?: string;
   initialFields?: FormField[];
@@ -20,6 +21,7 @@ export function FormBuilder({
   apiUrl,
   onBack,
   onFormCreated,
+  formId,
   initialTitle,
   initialDescription,
   initialFields,
@@ -197,10 +199,6 @@ export function FormBuilder({
       setError('Please add at least one field to your form.');
       return;
     }
-    if (accessType !== 'allow_all' && restrictedEmails.length === 0 && !emailInput.trim()) {
-      setError(`Please add at least one email address for ${accessType === 'allow_only' ? 'allowing' : 'restricting'} submissions.`);
-      return;
-    }
 
     // Auto-add leftover email in input field if present
     let finalEmails = [...restrictedEmails];
@@ -212,12 +210,20 @@ export function FormBuilder({
       finalEmails = Array.from(new Set([...finalEmails, ...parsed]));
     }
 
+    if (accessType !== 'allow_all' && finalEmails.length === 0) {
+      setError(`Please add at least one email address for ${accessType === 'allow_only' ? 'allowing' : 'restricting'} submissions.`);
+      return;
+    }
+
     setError('');
     setPublishing(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/forms`, {
-        method: 'POST',
+      const endpoint = formId ? `${apiUrl}/api/forms/${formId}` : `${apiUrl}/api/forms`;
+      const method = formId ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -228,6 +234,7 @@ export function FormBuilder({
           accessType,
           restrictedEmails: finalEmails,
           fields: fields.map((f) => ({
+            id: f.id,
             label: f.label,
             fieldType: f.fieldType,
             placeholder: f.placeholder,
@@ -240,15 +247,15 @@ export function FormBuilder({
       });
 
       const data = (await response.json()) as {
-        form?: { shareId: string };
+        form?: { shareId?: string; id?: string };
         message?: string;
       };
 
-      if (!response.ok || !data.form?.shareId) {
-        throw new Error(data.message || 'Failed to create form.');
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to save form.');
       }
 
-      onFormCreated(data.form.shareId);
+      onFormCreated(data.form?.shareId || formId || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish form.');
     } finally {

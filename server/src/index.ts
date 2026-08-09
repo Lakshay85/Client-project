@@ -95,6 +95,8 @@ const generateShareId = () => Math.random().toString(36).substring(2, 10);
 
 // --- Form Builder API Routes ---
 
+// --- Form Builder API Routes ---
+
 // 1. Create a new Form
 app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
@@ -128,8 +130,14 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
         : 'allow_all';
 
     const normalizedEmails = Array.isArray(restrictedEmails)
-      ? restrictedEmails.map(e => String(e).toLowerCase().trim()).filter(Boolean)
+      ? Array.from(new Set(restrictedEmails.map(e => String(e).toLowerCase().trim()).filter(e => e && /^\S+@\S+\.\S+$/.test(e))))
       : [];
+
+    if (validAccessType !== 'allow_all' && normalizedEmails.length === 0) {
+      return res.status(400).json({
+        message: `Please specify at least one valid email address for ${validAccessType === 'allow_only' ? 'allowed' : 'restricted'} access.`
+      });
+    }
 
     const formId = crypto.randomUUID();
     const shareId = generateShareId();
@@ -244,7 +252,100 @@ app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
   } catch (error) { next(error); }
 });
 
-// 4. Delete form
+// 4. Update an existing Form (creator only)
+app.put('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const { title, description, accessType, restrictedEmails, fields } = req.body as {
+      title?: string;
+      description?: string;
+      accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
+      restrictedEmails?: string[];
+      fields?: Array<{
+        id?: string;
+        label: string;
+        fieldType: string;
+        placeholder?: string;
+        helpText?: string;
+        isRequired?: boolean;
+        options?: string[];
+        config?: Record<string, unknown>;
+      }>;
+    };
+
+    const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM forms WHERE id = ? AND user_id = ?', [id, userId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Form not found or unauthorized.' });
+    }
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ message: 'Form title is required.' });
+    }
+
+    if (!Array.isArray(fields) || fields.length === 0) {
+      return res.status(400).json({ message: 'Form must contain at least one field.' });
+    }
+
+    const validAccessType: 'allow_all' | 'allow_only' | 'restrict_specific' =
+      accessType === 'allow_only' || accessType === 'restrict_specific'
+        ? accessType
+        : 'allow_all';
+
+    const normalizedEmails = Array.isArray(restrictedEmails)
+      ? Array.from(new Set(restrictedEmails.map(e => String(e).toLowerCase().trim()).filter(e => e && /^\S+@\S+\.\S+$/.test(e))))
+      : [];
+
+    if (validAccessType !== 'allow_all' && normalizedEmails.length === 0) {
+      return res.status(400).json({
+        message: `Please specify at least one valid email address for ${validAccessType === 'allow_only' ? 'allowed' : 'restricted'} access.`
+      });
+    }
+
+    await pool.execute(
+      'UPDATE forms SET title = ?, description = ?, access_type = ?, restricted_emails = ? WHERE id = ? AND user_id = ?',
+      [
+        title.trim(),
+        description?.trim() || null,
+        validAccessType,
+        normalizedEmails.length > 0 ? JSON.stringify(normalizedEmails) : null,
+        id,
+        userId
+      ]
+    );
+
+    // Replace fields
+    await pool.execute('DELETE FROM form_fields WHERE form_id = ?', [id]);
+
+    for (let i = 0; i < fields.length; i++) {
+      const f = fields[i];
+      const fieldId = f.id || crypto.randomUUID();
+      await pool.execute(
+        `INSERT INTO form_fields (id, form_id, label, field_type, placeholder, help_text, is_required, options, config, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          fieldId,
+          id,
+          f.label || `Question ${i + 1}`,
+          f.fieldType || 'text',
+          f.placeholder || null,
+          f.helpText || null,
+          Boolean(f.isRequired),
+          f.options ? JSON.stringify(f.options) : null,
+          f.config ? JSON.stringify(f.config) : null,
+          i
+        ]
+      );
+    }
+
+    return res.json({
+      message: 'Form updated successfully',
+      form: { id, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails }
+    });
+  } catch (error) { next(error); }
+});
+
+// 5. Delete form
 app.delete('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
@@ -254,7 +355,7 @@ app.delete('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) =
   } catch (error) { next(error); }
 });
 
-// 5. Get responses for a form (for creator)
+// 6. Get responses for a form (for creator)
 app.get('/api/forms/:id/responses', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
@@ -311,7 +412,7 @@ app.get('/api/forms/:id/responses', authenticate, async (req: AuthRequest, res, 
   } catch (error) { next(error); }
 });
 
-// 6. Public Form Details (Accessible via share link)
+// 7. Public Form Details (Accessible via share link)
 app.get('/api/public/forms/:shareId', async (req, res, next) => {
   try {
     const { shareId } = req.params;
@@ -330,6 +431,8 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
       [form.id]
     );
 
+    const isRestricted = (form.accessType || 'allow_all') !== 'allow_all';
+
     return res.json({
       form: {
         id: form.id,
@@ -337,7 +440,7 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
         title: form.title,
         description: form.description,
         accessType: form.accessType || 'allow_all',
-        restrictedEmails: form.restrictedEmails ? (typeof form.restrictedEmails === 'string' ? JSON.parse(form.restrictedEmails) : form.restrictedEmails) : [],
+        isRestricted,
         fields: fields.map(f => ({
           ...f,
           isRequired: Boolean(f.isRequired),
@@ -349,14 +452,14 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-// 7. Public Form Submission
+// 8. Public Form Submission with Access Enforcement
 app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
   try {
     const { shareId } = req.params;
     const { answers, submitterEmail } = req.body as { answers?: Record<string, unknown>; submitterEmail?: string };
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = "published"',
+      'SELECT id, title, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = "published"',
       [shareId]
     );
 
@@ -367,7 +470,7 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
     const form = forms[0];
     const formId = form.id;
 
-    // Validate submitter email if provided or required
+    // Validate submitter email
     let emailToUse = typeof submitterEmail === 'string' ? submitterEmail.trim().toLowerCase() : '';
     
     // Also check Bearer token if header present and email wasn't explicitly passed
@@ -380,7 +483,17 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
       } catch (e) {}
     }
 
-    // Access control evaluation
+    // Auto-detect email from answers if submitterEmail was not explicitly provided
+    if (!emailToUse && answers && typeof answers === 'object') {
+      for (const val of Object.values(answers)) {
+        if (typeof val === 'string' && /^\S+@\S+\.\S+$/.test(val.trim())) {
+          emailToUse = val.trim().toLowerCase();
+          break;
+        }
+      }
+    }
+
+    // Strict access control evaluation
     const accessType = form.accessType || 'allow_all';
     const rawRestricted = form.restrictedEmails;
     const restrictedList: string[] = Array.isArray(rawRestricted)
@@ -389,17 +502,22 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
       ? (JSON.parse(rawRestricted) as string[]).map(e => String(e).trim().toLowerCase())
       : [];
 
-    if (!validEmail(emailToUse)) {
-      return res.status(400).json({ message: 'Please enter a valid email address to submit this form.' });
-    }
-
-    if (accessType === 'allow_only') {
-      if (!restrictedList.includes(emailToUse)) {
-        return res.status(403).json({ message: 'You are not authorized to submit this form.' });
+    if (accessType !== 'allow_all') {
+      if (!validEmail(emailToUse)) {
+        return res.status(400).json({ message: 'Please enter a valid email address to verify your permission to submit this form.' });
       }
-    } else if (accessType === 'restrict_specific') {
-      if (restrictedList.includes(emailToUse)) {
-        return res.status(403).json({ message: 'You are not authorized to submit this form.' });
+      if (accessType === 'allow_only') {
+        if (!restrictedList.includes(emailToUse)) {
+          return res.status(403).json({
+            message: `Access Denied: The email address '${emailToUse}' is not authorized to submit responses for this form.`
+          });
+        }
+      } else if (accessType === 'restrict_specific') {
+        if (restrictedList.includes(emailToUse)) {
+          return res.status(403).json({
+            message: `Access Denied: The email address '${emailToUse}' is restricted from submitting responses for this form.`
+          });
+        }
       }
     }
 

@@ -1,6 +1,6 @@
-# FormGuard 🛡️
+# Form Enclave 🏰
 
-**FormGuard** is a modern, full-stack form builder and response management platform built with **React + TypeScript** on the frontend and an **Express + TypeScript** API backed by **MySQL**.
+**Form Enclave** is a modern, full-stack form builder and response management platform built with **React + TypeScript** on the frontend and an **Express + TypeScript** API backed by **MySQL**.
 
 ## 🌟 Key Features
 
@@ -27,7 +27,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=formguard_db
+DB_NAME=formenclave_db
 ```
 
 ### 3. Initialize Database

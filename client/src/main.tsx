@@ -28,9 +28,9 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const shareIdFromUrl = urlParams.get('form');
 
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('formguard_token') || localStorage.getItem('ember_token'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('formenclave_token') || localStorage.getItem('formguard_token') || localStorage.getItem('ember_token'));
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
+    const saved = localStorage.getItem('formenclave_user') || localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
     return saved ? (JSON.parse(saved) as User) : null;
   });
 
@@ -42,10 +42,13 @@ function App() {
   const [fetchingForms, setFetchingForms] = useState(false);
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
 
+  const [editingForm, setEditingForm] = useState<Form | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<{
     title: string;
     description: string;
     fields: FormField[];
+    accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
+    restrictedEmails?: string[];
   } | null>(null);
 
   const [shareModalShareId, setShareModalShareId] = useState<string | null>(null);
@@ -74,6 +77,28 @@ function App() {
     }
   };
 
+  const editExistingForm = async (form: Form) => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/forms/${form.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = (await response.json()) as { form?: Form; message?: string };
+      if (response.ok && data.form) {
+        setEditingForm(data.form);
+        setActiveTemplate(null);
+        setView('builder');
+      } else {
+        alert(data.message || 'Failed to load form details.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>, mode: 'login' | 'signup') => {
     event.preventDefault();
     setError('');
@@ -90,8 +115,8 @@ function App() {
       if (!response.ok || !data.token || !data.user) {
         throw new Error(data.message ?? 'Unable to authenticate.');
       }
-      localStorage.setItem('formguard_token', data.token);
-      localStorage.setItem('formguard_user', JSON.stringify(data.user));
+      localStorage.setItem('formenclave_token', data.token);
+      localStorage.setItem('formenclave_user', JSON.stringify(data.user));
       setToken(data.token);
       setUser(data.user);
       setView('dashboard');
@@ -103,6 +128,8 @@ function App() {
   };
 
   const signOut = () => {
+    localStorage.removeItem('formenclave_token');
+    localStorage.removeItem('formenclave_user');
     localStorage.removeItem('formguard_token');
     localStorage.removeItem('formguard_user');
     localStorage.removeItem('ember_token');
@@ -135,11 +162,13 @@ function App() {
   };
 
   const startNewBlankForm = () => {
+    setEditingForm(null);
     setActiveTemplate(null);
     setView('builder');
   };
 
   const useDefaultTemplate = (template: DefaultFormTemplate) => {
+    setEditingForm(null);
     setActiveTemplate({
       title: template.title,
       description: template.description,
@@ -183,12 +212,17 @@ function App() {
         onBack={() => setView('dashboard')}
         onFormCreated={(shareId) => {
           fetchUserForms();
-          setShareModalShareId(shareId);
+          if (shareId) {
+            setShareModalShareId(shareId);
+          }
           setView('dashboard');
         }}
-        initialTitle={activeTemplate?.title}
-        initialDescription={activeTemplate?.description}
-        initialFields={activeTemplate?.fields}
+        formId={editingForm?.id}
+        initialTitle={editingForm?.title || activeTemplate?.title}
+        initialDescription={editingForm?.description || activeTemplate?.description}
+        initialFields={editingForm?.fields || activeTemplate?.fields}
+        initialAccessType={editingForm?.accessType || activeTemplate?.accessType || 'allow_all'}
+        initialRestrictedEmails={editingForm?.restrictedEmails || activeTemplate?.restrictedEmails || []}
       />
     );
   }
@@ -216,7 +250,7 @@ function App() {
       <nav className="top-nav">
         <a className="brand" onClick={() => setView(user ? 'dashboard' : 'home')}>
           <div className="brand-logo-icon">F</div>
-          form<span>Guard</span>
+          form<span>Enclave</span>
         </a>
 
         <div className="nav-actions">
@@ -314,6 +348,14 @@ function App() {
               <div className="forms-grid">
                 {forms.map((form) => {
                   const shareUrl = `${window.location.origin}/?form=${form.shareId}`;
+                  const restrictedCount = form.restrictedEmails?.length || 0;
+                  const accessBadgeLabel =
+                    form.accessType === 'allow_only'
+                      ? `🔒 Whitelisted (${restrictedCount} emails)`
+                      : form.accessType === 'restrict_specific'
+                      ? `🚫 Blacklisted (${restrictedCount} emails)`
+                      : `🌐 Public Access`;
+
                   return (
                     <article key={form.id} className="card form-summary-card">
                       <div>
@@ -321,7 +363,12 @@ function App() {
                           <div className="form-card-icon-box">
                             <Icon name="textarea" size={22} />
                           </div>
-                          <span className="form-status-badge">{form.status}</span>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <span className={`access-status-badge ${form.accessType || 'allow_all'}`}>
+                              {accessBadgeLabel}
+                            </span>
+                            <span className="form-status-badge">{form.status}</span>
+                          </div>
                         </div>
 
                         <h3 className="form-card-title">{form.title}</h3>
@@ -347,6 +394,13 @@ function App() {
                             title="Copy Public Link"
                           >
                             <Icon name="copy" size={14} /> Copy Link
+                          </button>
+                          <button
+                            className="text-button btn-sm"
+                            onClick={() => editExistingForm(form)}
+                            title="Edit Form & Access Settings"
+                          >
+                            ✏️ Edit
                           </button>
                           <button
                             className="text-button btn-sm"
@@ -501,7 +555,7 @@ function AuthPage({
       <nav className="top-nav auth-nav">
         <a className="brand" onClick={() => onMode('home')}>
           <div className="brand-logo-icon">F</div>
-          form<span>Guard</span>
+          form<span>Enclave</span>
         </a>
         <button className="text-button back-home-btn" onClick={() => onMode('home')}>
           ← Back home
@@ -524,7 +578,7 @@ function AuthPage({
               ) : (
                 <>
                   Welcome Back to<br />
-                  <span className="gradient-text">FormGuard.</span>
+                  <span className="gradient-text">Form Enclave.</span>
                 </>
               )}
             </h1>

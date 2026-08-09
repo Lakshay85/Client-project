@@ -411,6 +411,30 @@ main.app-shell {
   padding: 4px 10px;
   border-radius: var(--radius-full);
 }
+.access-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.access-status-badge.allow_only {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.access-status-badge.restrict_specific {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+.access-status-badge.allow_all {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
 .form-card-title {
   font-size: 18px;
   font-weight: 700;
