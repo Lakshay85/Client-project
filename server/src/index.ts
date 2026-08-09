@@ -2,11 +2,12 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2';
 import { pool } from './database/connection.js';
 
-type User = RowDataPacket & { id: string; name: string; email: string; password_hash: string; status: 'active' | 'disabled'; created_at: Date };
+type User = RowDataPacket & { id: string; name: string; email: string; password_hash: string | null; google_id?: string | null; status: 'active' | 'disabled'; created_at: Date };
 type PublicUser = { id: string; name: string; email: string; createdAt: string };
 
 const port = Number(process.env.PORT ?? 4000);
@@ -14,6 +15,11 @@ const jwtSecret = process.env.JWT_SECRET ?? 'development-only-secret-change-me';
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
 app.use(express.json());
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/auth/google/callback';
+const googleClient = new OAuth2Client(googleClientId, googleClientSecret, googleRedirectUri);
 
 const publicUser = (user: User): PublicUser => ({ id: user.id, name: user.name, email: user.email, createdAt: new Date(user.created_at).toISOString() });
 const issueToken = (user: User) => jwt.sign({ sub: user.id, email: user.email }, jwtSecret, { expiresIn: '7d' });
@@ -27,6 +33,11 @@ async function findUserByEmail(email: string): Promise<User | undefined> {
 
 async function findUserById(id: string): Promise<User | undefined> {
   const [rows] = await pool.query<User[]>('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+  return rows[0];
+}
+
+async function findUserByGoogleId(googleId: string): Promise<User | undefined> {
+  const [rows] = await pool.query<User[]>('SELECT * FROM users WHERE google_id = ? LIMIT 1', [googleId]);
   return rows[0];
 }
 
@@ -55,9 +66,153 @@ app.post('/api/auth/login', async (req, res, next) => {
     const { email, password } = req.body as Record<string, unknown>;
     if (!validEmail(email) || typeof password !== 'string') return res.status(400).json({ message: 'Email and password are required.' });
     const user = await findUserByEmail(email.toLowerCase().trim());
-    if (!user || user.status !== 'active' || !(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ message: 'Invalid email or password.' });
+    if (!user || user.status !== 'active' || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
     await pool.execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
     await pool.execute('INSERT INTO login_events (user_id, ip_address, user_agent) VALUES (?, ?, ?)', [user.id, clientIp(req), req.get('user-agent')?.slice(0, 500) ?? null]);
+    return res.json({ token: issueToken(user), user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+
+// --- Google OAuth Routes ---
+
+app.get('/api/auth/google/url', (_req, res) => {
+  const url = googleClient.generateAuthUrl({
+    access_type: 'offline',
+    scope: [
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
+    prompt: 'select_account'
+  });
+  return res.json({ url, clientId: googleClientId });
+});
+
+app.get('/api/auth/google', (_req, res) => {
+  const url = googleClient.generateAuthUrl({
+    access_type: 'offline',
+    scope: [
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
+    prompt: 'select_account'
+  });
+  return res.redirect(url);
+});
+
+app.get('/api/auth/google/callback', async (req, res, next) => {
+  const clientOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+  try {
+    const code = req.query.code as string;
+    if (!code) {
+      return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Authorization code missing')}`);
+    }
+    const { tokens } = await googleClient.getToken(code);
+    if (!tokens.id_token) {
+      return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Failed to get ID token from Google')}`);
+    }
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: googleClientId,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Email not returned by Google')}`);
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email.toLowerCase().trim();
+    const name = payload.name || email.split('@')[0];
+
+    let user = (await findUserByGoogleId(googleId)) || (await findUserByEmail(email));
+
+    if (user) {
+      if (user.status !== 'active') {
+        return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Account is disabled')}`);
+      }
+      if (!user.google_id) {
+        await pool.execute('UPDATE users SET google_id = ? WHERE id = ?', [googleId, user.id]);
+      }
+    } else {
+      const userId = crypto.randomUUID();
+      await pool.execute(
+        'INSERT INTO users (id, name, email, google_id, email_verified_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+        [userId, name, email, googleId]
+      );
+      user = await findUserById(userId);
+    }
+
+    if (!user) {
+      return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Failed to authenticate user')}`);
+    }
+
+    await pool.execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+    await pool.execute('INSERT INTO login_events (user_id, ip_address, user_agent) VALUES (?, ?, ?)', [user.id, clientIp(req), req.get('user-agent')?.slice(0, 500) ?? null]);
+
+    const token = issueToken(user);
+    const userJson = encodeURIComponent(JSON.stringify(publicUser(user)));
+    return res.redirect(`${clientOrigin}/?token=${encodeURIComponent(token)}&user=${userJson}`);
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Google authentication failed')}`);
+  }
+});
+
+app.post('/api/auth/google', async (req, res, next) => {
+  try {
+    const { idToken, code, credential } = req.body as { idToken?: string; code?: string; credential?: string };
+    const tokenToVerify = idToken || credential;
+    let payload: Record<string, any> | undefined;
+
+    if (tokenToVerify) {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: tokenToVerify,
+        audience: googleClientId,
+      });
+      payload = ticket.getPayload();
+    } else if (code) {
+      const { tokens } = await googleClient.getToken(code);
+      if (tokens.id_token) {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: tokens.id_token,
+          audience: googleClientId,
+        });
+        payload = ticket.getPayload();
+      }
+    }
+
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Invalid Google authentication request or missing email.' });
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email.toLowerCase().trim();
+    const name = payload.name || email.split('@')[0];
+
+    let user = (await findUserByGoogleId(googleId)) || (await findUserByEmail(email));
+
+    if (user) {
+      if (user.status !== 'active') {
+        return res.status(403).json({ message: 'Your account has been disabled.' });
+      }
+      if (!user.google_id) {
+        await pool.execute('UPDATE users SET google_id = ? WHERE id = ?', [googleId, user.id]);
+      }
+    } else {
+      const userId = crypto.randomUUID();
+      await pool.execute(
+        'INSERT INTO users (id, name, email, google_id, email_verified_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+        [userId, name, email, googleId]
+      );
+      user = await findUserById(userId);
+    }
+
+    if (!user) throw new Error('User creation failed.');
+
+    await pool.execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+    await pool.execute('INSERT INTO login_events (user_id, ip_address, user_agent) VALUES (?, ?, ?)', [user.id, clientIp(req), req.get('user-agent')?.slice(0, 500) ?? null]);
+
     return res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) { next(error); }
 });
@@ -72,6 +227,7 @@ app.get('/api/auth/me', async (req, res, next) => {
     return res.json({ user: publicUser(user) });
   } catch (error) { next(error); }
 });
+
 
 interface AuthRequest extends Request {
   user?: User;

@@ -55,10 +55,36 @@ function App() {
   const [copiedToast, setCopiedToast] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get('token');
+    const userFromUrl = params.get('user');
+    const authErrorFromUrl = params.get('auth_error');
+
+    if (tokenFromUrl && userFromUrl) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userFromUrl)) as User;
+        localStorage.setItem('formenclave_token', tokenFromUrl);
+        localStorage.setItem('formenclave_user', JSON.stringify(parsedUser));
+        setToken(tokenFromUrl);
+        setUser(parsedUser);
+        setView('dashboard');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        console.error('Failed to parse user from Google auth redirect', e);
+      }
+    } else if (authErrorFromUrl) {
+      setError(decodeURIComponent(authErrorFromUrl));
+      setView('login');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     if (token && user && (view === 'dashboard' || view === 'responses-list')) {
       fetchUserForms();
     }
   }, [token, user, view]);
+
 
   const fetchUserForms = async () => {
     if (!token) return;
@@ -249,9 +275,10 @@ function App() {
       {/* Top Navigation Header */}
       <nav className="top-nav">
         <a className="brand" onClick={() => setView(user ? 'dashboard' : 'home')}>
-          <div className="brand-logo-icon">F</div>
+          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" />
           form<span>Enclave</span>
         </a>
+
 
         <div className="nav-actions">
           {user ? (
@@ -554,9 +581,10 @@ function AuthPage({
     <main className="auth-page app-shell">
       <nav className="top-nav auth-nav">
         <a className="brand" onClick={() => onMode('home')}>
-          <div className="brand-logo-icon">F</div>
+          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" />
           form<span>Enclave</span>
         </a>
+
         <button className="text-button back-home-btn" onClick={() => onMode('home')}>
           ← Back home
         </button>
@@ -638,7 +666,25 @@ function AuthPage({
               <p>{signup ? 'Get started in under 30 seconds' : 'Enter your credentials to continue'}</p>
             </div>
 
+            <div className="google-auth-section">
+              <button
+                type="button"
+                className="google-auth-btn"
+                onClick={() => {
+                  window.location.href = `${apiUrl}/api/auth/google`;
+                }}
+              >
+                <Icon name="google" size={20} />
+                <span>{signup ? 'Sign up with Google' : 'Sign in with Google'}</span>
+              </button>
+            </div>
+
+            <div className="auth-divider">
+              <span>OR</span>
+            </div>
+
             <form onSubmit={onSubmit} className="auth-form">
+
               {signup && (
                 <div className="form-group">
                   <label htmlFor="auth-name">Your Full Name</label>

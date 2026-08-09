@@ -163,10 +163,18 @@ main.app-shell {
   font-weight: 800;
   box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
 }
+.brand-logo-img {
+  height: 36px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  display: block;
+}
 .brand span {
   color: var(--primary);
   font-weight: 800;
 }
+
 
 .nav-actions { display: flex; align-items: center; gap: 16px; }
 .nav-link {
@@ -2151,4 +2159,52 @@ select { cursor: pointer; }
 .switch-link-btn:hover {
   color: var(--primary-hover);
 }
+
+/* --- Google OAuth Button & Divider --- */
+.google-auth-section {
+  margin-bottom: 16px;
+}
+.google-auth-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #ffffff;
+  color: var(--slate-800);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+.google-auth-btn:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-400);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--slate-400);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin: 18px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--slate-200);
+}
+.auth-divider span {
+  padding: 0 14px;
+}
+
 

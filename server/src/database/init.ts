@@ -107,6 +107,15 @@ try {
 try {
   await rootConnection.query(`ALTER TABLE form_submissions ADD COLUMN submitter_email VARCHAR(255) NULL`);
 } catch (e) {}
+try {
+  await rootConnection.query(`ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL`);
+} catch (e) {}
+try {
+  await rootConnection.query(`ALTER TABLE users ADD INDEX idx_users_google_id (google_id)`);
+} catch (e) {}
+try {
+  await rootConnection.query(`ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL`);
+} catch (e) {}
 
 await rootConnection.end();
 console.log(`Database '${databaseName}' is ready.`);

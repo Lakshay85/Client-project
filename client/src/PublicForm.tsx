@@ -191,9 +191,10 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     <div className="public-form-shell">
       <nav className="public-form-nav">
         <a className="brand" onClick={onHomeClick}>
-          <div className="brand-logo-icon">F</div>
+          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" />
           form<span>Enclave</span>
         </a>
+
       </nav>
 
       <form className="public-form-container" onSubmit={handleSubmit}>
