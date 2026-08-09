@@ -337,29 +337,7 @@ function App() {
 
         {/* Right Workspace Main Content Area */}
         <main className="workspace-main-area">
-          {/* Top Header Bar */}
-          {view !== 'dashboard' && (
-            <header className="top-header-bar">
-              <h1 className="top-header-title">
-                {view === 'default-forms'
-                  ? 'Templates Gallery'
-                  : view === 'responses-list' || view === 'responses-detail' || view === 'analytics'
-                    ? 'Analytics Hub'
-                    : view === 'settings'
-                      ? 'Portal Settings'
-                      : 'Overview'}
-              </h1>
-              <Button3D
-                variant="primary"
-                size="md"
-                icon={<Icon name="plus" size={18} />}
-                onClick={startNewBlankForm}
-                style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
-              >
-                Build New Form
-              </Button3D>
-            </header>
-          )}
+
 
           <div className="workspace-content-body">
             {/* Dashboard View */}

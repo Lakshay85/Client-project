@@ -180,9 +180,7 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
         }}
       >
         <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack} style={{ color: '#94a3b8' }}>
-            Back to Dashboard
-          </Button3D>
+
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', letterSpacing: '-0.01em' }}>Pre-Built 3D Form Templates Gallery</h1>
             <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px' }}>Select any production-grade template to preview interactively, edit questions, or deploy live.</p>
