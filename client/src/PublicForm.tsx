@@ -206,21 +206,12 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
       </nav>
 
       <form className="public-form-container" onSubmit={handleSubmit} style={{ maxWidth: '680px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-        {/* 3D Progress Bar */}
-        <div style={{ marginBottom: '20px', background: 'rgba(255, 255, 255, 0.08)', padding: '12px 16px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#5eead4', marginBottom: '6px' }}>
-            <span>PROGRESS</span>
-            <span>{progressPercent}% Complete</span>
-          </div>
-          <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #2dd4bf, #06b6d4)', transition: 'width 0.3s ease' }} />
-          </div>
-        </div>
+
 
         <TiltCard maxRotateX={6} maxRotateY={6} glowColor="rgba(6, 182, 212, 0.3)">
           <div className="clay-card" style={{ padding: '32px' }}>
             {/* Header */}
-            <div className="form-header-card" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', background: 'transparent' }}>
+            <div className="form-header-card" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', borderTop: 'none', background: 'transparent' }}>
               <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>{form?.title}</h1>
               {form?.description && (
                 <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0 0 16px', lineHeight: 1.6 }}>{form.description}</p>

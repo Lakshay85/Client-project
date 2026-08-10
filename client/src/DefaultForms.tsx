@@ -144,7 +144,7 @@ function RenderPreviewFieldInput({
 
 export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+
   const [previewTemplate, setPreviewTemplate] = useState<DefaultFormTemplate | null>(null);
   const [previewAnswers, setPreviewAnswers] = useState<Record<string, any>>({});
   const [previewSubmitted, setPreviewSubmitted] = useState(false);
@@ -156,12 +156,7 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
   };
 
   const filteredTemplates = DEFAULT_FORM_TEMPLATES.filter((tpl) => {
-    const matchesCategory = categoryFilter === 'all' || tpl.category.toLowerCase() === categoryFilter.toLowerCase();
-    const matchesSearch =
-      tpl.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tpl.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tpl.category.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return categoryFilter === 'all' || tpl.category.toLowerCase() === categoryFilter.toLowerCase();
   });
 
   return (

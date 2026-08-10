@@ -45,7 +45,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   };
 
   return (
-    <main className="auth-page app-shell">
+    <main className="auth-page">
       <nav className="top-nav auth-nav">
         <BrandLogo3D onClick={() => navigate('/')} logoSize={44} fontSize="22px" />
 
@@ -62,9 +62,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
         <div className="auth-shell">
           {/* Left Column: Visual Teaser & Feature Highlights */}
           <section className="auth-intro">
-            <div className="auth-badge">
-              <span className="live-dot"></span> Secure Form Studio 2.0
-            </div>
+
             <h1>
               {signup ? (
                 <>
@@ -208,15 +206,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                     className="password-toggle-btn"
                     onClick={() => setShowPassword(!showPassword)}
                     title={showPassword ? 'Hide password' : 'Show password'}
+                    style={{ right: '16px', width: '32px', height: '32px' }}
                   >
-                    <Icon name="eye" size={16} />
+                    <Icon name="eye" size={18} />
                   </button>
                 </div>
               </div>
 
               {error && <div className="form-error auth-error-alert">{error}</div>}
 
-              <button className="coral-button form-submit-btn" disabled={loading}>
+              <button className="form-submit-btn" disabled={loading}>
                 {loading ? 'Please wait…' : signup ? 'Create Account' : 'Log In to Workspace'}
               </button>
             </form>

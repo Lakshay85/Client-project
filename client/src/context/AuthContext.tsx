@@ -7,7 +7,6 @@ interface AuthContextType {
   apiUrl: string;
   login: (token: string, user: User) => void;
   logout: () => void;
-  setUser: (user: User | null) => void;
 }
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
@@ -48,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, apiUrl, login, logout, setUser }}>
+    <AuthContext.Provider value={{ user, token, apiUrl, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

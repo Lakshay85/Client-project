@@ -102,13 +102,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               padding: '24px',
               background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 'var(--radius-lg)'
+              borderRadius: 'var(--radius-lg)',
+              position: 'relative'
             }}
           >
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
-              TOTAL FORMS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
+                TOTAL FORMS
+              </div>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(6, 182, 212, 0.15)',
+                  color: '#06b6d4',
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)'
+                }}
+              >
+                <Icon name="textarea" size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '6px 0 4px' }}>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '4px 0' }}>
               {forms.length}
             </div>
             <div
@@ -132,13 +151,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               padding: '24px',
               background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 'var(--radius-lg)'
+              borderRadius: 'var(--radius-lg)',
+              position: 'relative'
             }}
           >
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
-              TOTAL SUBMISSIONS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
+                TOTAL SUBMISSIONS
+              </div>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(139, 92, 246, 0.15)',
+                  color: '#c084fc',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 12px rgba(139, 92, 246, 0.2)'
+                }}
+              >
+                <Icon name="users" size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '6px 0 4px' }}>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '4px 0' }}>
               {forms.reduce((acc, f) => acc + (f.responseCount || 0), 0)}
             </div>
             <div
@@ -162,13 +200,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               padding: '24px',
               background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 'var(--radius-lg)'
+              borderRadius: 'var(--radius-lg)',
+              position: 'relative'
             }}
           >
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
-              RESTRICTED FORMS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>
+                RESTRICTED FORMS
+              </div>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  color: '#fbbf24',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 12px rgba(245, 158, 11, 0.2)'
+                }}
+              >
+                <Icon name="lock" size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '6px 0 4px' }}>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', margin: '4px 0' }}>
               {forms.filter((f) => f.accessType && f.accessType !== 'allow_all').length}
             </div>
             <div
@@ -193,8 +250,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           className="section-title"
           style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}
         >
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.01em' }}>
-            Your Active Forms
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Icon name="sparkles" size={20} style={{ color: '#06b6d4' }} />
+            <span>Your Active Forms</span>
           </h2>
           <span
             className="count-badge"

@@ -4,9 +4,10 @@ export interface IconProps {
   name: string;
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function Icon({ name, size = 18, className = '' }: IconProps) {
+export function Icon({ name, size = 18, className = '', style }: IconProps) {
   const props = {
     width: size,
     height: size,
@@ -16,7 +17,8 @@ export function Icon({ name, size = 18, className = '' }: IconProps) {
     strokeWidth: 2,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
-    className: `icon ${className}`
+    className: `icon ${className}`,
+    style
   };
 
   switch (name) {

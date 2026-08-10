@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Icon } from '../Icons';
 import { Button3D } from './Button3D';
 import { TiltCard } from './TiltCard';
@@ -104,7 +104,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
 
   return (
     <div className="landing-3d-wrapper" style={{ background: '#070A0F', color: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif', overflowX: 'hidden' }}>
-      
+
       {/* 1. Top Glass Navigation Bar */}
       <nav className="landing-nav-bar" style={{ position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(16px)', background: 'rgba(7, 10, 15, 0.85)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', padding: '16px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <BrandLogo3D logoSize={54} fontSize="26px" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
@@ -133,10 +133,10 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
 
       {/* Main Container */}
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
-        
+
         {/* 2. Hero Glassmorphism Banner Section */}
         <section className="hero-3d-split" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '48px', alignItems: 'center', padding: '60px 40px', background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.15)', margin: '30px 0 60px', position: 'relative', overflow: 'hidden' }}>
-          
+
           {/* Glassmorphism Ambient Orbs */}
           <div style={{ position: 'absolute', top: '-120px', left: '-120px', width: '450px', height: '450px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: '-120px', right: '-120px', width: '450px', height: '450px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
@@ -144,7 +144,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
           {/* Left Column: Hero Text & Styled Buttons */}
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div className="hero-pill-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.35)', backdropFilter: 'blur(12px)', color: '#22d3ee', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '24px' }}>
-              <span className="pulse-emerald-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 10px #22d3ee' }} />
+              {/* <span className="pulse-emerald-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 10px #22d3ee' }} /> */}
               FORM ENCLAVE MANAGEMENT PORTAL
             </div>
 
@@ -177,7 +177,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
             <TiltCard maxRotateX={15} maxRotateY={20} glowColor="rgba(16, 185, 129, 0.35)" style={{ width: '100%', maxWidth: '520px' }}>
               {/* 3D Tilted Device Container */}
               <div className="device-mockup-3d" style={{ background: '#0F172A', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.2)', padding: '20px', position: 'relative' }}>
-                
+
                 {/* Mockup Header Toolbar */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -243,7 +243,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
         {/* 3. 3D Feature Cards Grid */}
         <section id="features" style={{ padding: '60px 0' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '28px' }}>
-            
+
             {/* Feature 1 */}
             <TiltCard glowColor="rgba(16, 185, 129, 0.25)" maxRotateX={10} maxRotateY={12}>
               <div style={{ background: '#0F172A', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '32px 28px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -287,11 +287,11 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
 
         {/* 4. Dashboard Showcase & Powerful Tools Section */}
         <section style={{ padding: '80px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '48px', alignItems: 'center' }}>
-          
+
           {/* Left: 3D Tilted Interactive Dashboard Showcase Card */}
           <TiltCard maxRotateX={12} maxRotateY={15} glowColor="rgba(16, 185, 129, 0.3)">
             <div style={{ background: '#0F172A', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)' }}>
-              
+
               {/* Dashboard Inner Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

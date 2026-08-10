@@ -252,8 +252,6 @@ const generateShareId = () => Math.random().toString(36).substring(2, 10);
 
 // --- Form Builder API Routes ---
 
-// --- Form Builder API Routes ---
-
 // 1. Create a new Form
 app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
@@ -507,7 +505,7 @@ app.delete('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) =
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const [result] = await pool.execute('DELETE FROM forms WHERE id = ? AND user_id = ?', [id, userId]);
+    await pool.execute('DELETE FROM forms WHERE id = ? AND user_id = ?', [id, userId]);
     return res.json({ message: 'Form deleted successfully.' });
   } catch (error) { next(error); }
 });

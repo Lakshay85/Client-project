@@ -13,7 +13,7 @@ export const BrandLogo3D: React.FC<BrandLogo3DProps> = ({
   onClick,
   logoSize = 56,
   fontSize = '26px',
-  showText = false,
+  showText = true,
   style,
 }) => {
   return (

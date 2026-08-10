@@ -11,7 +11,27 @@ interface FormResponsesProps {
   onBack: () => void;
 }
 
-type ViewMode = 'summary' | 'table' | 'cards';
+type ViewMode = 'table' | 'cards';
+
+function formatISTDate(dateStr: string | Date, options?: Intl.DateTimeFormatOptions) {
+  if (!dateStr) return 'N/A';
+  let d: Date;
+  if (typeof dateStr === 'string') {
+    const trimmed = dateStr.trim();
+    if (!trimmed.endsWith('Z') && !trimmed.includes('+') && !/-\d{2}:\d{2}$/.test(trimmed)) {
+      d = new Date(trimmed.replace(' ', 'T') + '+05:30');
+    } else {
+      d = new Date(trimmed);
+    }
+  } else {
+    d = dateStr;
+  }
+  if (isNaN(d.getTime())) return 'N/A';
+  return d.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    ...options
+  });
+}
 
 export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesProps) {
   const [formTitle, setFormTitle] = useState('');
@@ -19,7 +39,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('summary');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeModalSubmission, setActiveModalSubmission] = useState<FormSubmission | null>(null);
 
@@ -68,7 +88,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
       });
       return [
         sub.id,
-        new Date(sub.submittedAt).toLocaleString(),
+        formatISTDate(sub.submittedAt),
         `"${String(sub.submitterEmail || 'N/A').replace(/"/g, '""')}"`,
         sub.submitterIp || 'N/A',
         ...answers
@@ -126,9 +146,13 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               {submissions.length > 0 && (
                 <span>
                   {' '}• Latest:{' '}
-                  {new Date(submissions[0].submittedAt).toLocaleString(undefined, {
-                    dateStyle: 'short',
-                    timeStyle: 'short'
+                  {formatISTDate(submissions[0].submittedAt, {
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: '2-digit',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
                   })}
                 </span>
               )}
@@ -138,13 +162,6 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
 
         <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="view-switch" style={{ display: 'flex', gap: '4px', background: 'rgba(15, 23, 42, 0.7)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <Button3D
-              variant={viewMode === 'summary' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('summary')}
-            >
-              Summary
-            </Button3D>
             <Button3D
               variant={viewMode === 'table' ? 'primary' : 'ghost'}
               size="sm"
@@ -186,115 +203,6 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
             <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>Share your public form link with users to start receiving responses.</p>
           </div>
         </TiltCard>
-      ) : viewMode === 'summary' ? (
-        <div className="summary-view-grid">
-          <div className="metrics-banner">
-            <div className="metric-box">
-              <div className="metric-icon-badge">
-                <Icon name="email" size={22} />
-              </div>
-              <div className="metric-details">
-                <span className="metric-num">{submissions.length}</span>
-                <span className="metric-label">Total Responses</span>
-              </div>
-            </div>
-            <div className="metric-box">
-              <div className="metric-icon-badge secondary">
-                <Icon name="grid" size={22} />
-              </div>
-              <div className="metric-details">
-                <span className="metric-num">{fields.length}</span>
-                <span className="metric-label">Form Questions</span>
-              </div>
-            </div>
-            <div className="metric-box">
-              <div className="metric-icon-badge accent">
-                <Icon name="check" size={22} />
-              </div>
-              <div className="metric-details">
-                <span className="metric-num">100%</span>
-                <span className="metric-label">Completion Status</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="question-summaries-list">
-            {fields.map((field, idx) => {
-              const fieldAnswers = submissions.map((s) => parseAnswerValue(s.answers[field.id]));
-              const validAnswers = fieldAnswers.filter((a) => a !== 'No response');
-
-              const frequencyMap: Record<string, number> = {};
-              validAnswers.forEach((ans) => {
-                const items = ['radio', 'checkbox', 'select'].includes(field.fieldType)
-                  ? ans.split(', ')
-                  : [ans];
-                items.forEach((item) => {
-                  frequencyMap[item] = (frequencyMap[item] || 0) + 1;
-                });
-              });
-
-              return (
-                <div key={field.id} className="card question-summary-card">
-                  <div className="summary-card-header">
-                    <span className="q-number">Question {idx + 1}</span>
-                    <span className="q-type-badge">{field.fieldType}</span>
-                  </div>
-                  <h3 className="summary-q-title">{field.label}</h3>
-                  <div className="summary-q-meta">
-                    {validAnswers.length} responses ({submissions.length - validAnswers.length} skipped)
-                  </div>
-
-                  {['radio', 'checkbox', 'select', 'toggle'].includes(field.fieldType) ? (
-                    <div className="breakdown-bars">
-                      {Object.entries(frequencyMap).map(([option, count]) => {
-                        const percent = Math.round((count / Math.max(1, submissions.length)) * 100);
-                        return (
-                          <div key={option} className="bar-row">
-                            <div className="bar-label-group">
-                              <span className="option-name">{option}</span>
-                              <span className="option-stat">
-                                {count} ({percent}%)
-                              </span>
-                            </div>
-                            <div className="bar-track">
-                              <div
-                                className="bar-fill"
-                                style={{ width: `${percent}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="response-stream">
-                      {validAnswers.slice(0, 8).map((ans, i) => (
-                        <div key={i} className="stream-badge">
-                          {field.fieldType === 'color' ? (
-                            <span className="color-preview-chip">
-                              <span
-                                className="swatch"
-                                style={{ backgroundColor: ans }}
-                              ></span>
-                              {ans}
-                            </span>
-                          ) : (
-                            ans
-                          )}
-                        </div>
-                      ))}
-                      {validAnswers.length > 8 && (
-                        <span className="more-responses-count">
-                          + {validAnswers.length - 8} more responses
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       ) : viewMode === 'table' ? (
         <div className="card table-card">
           <div className="table-responsive">
@@ -320,9 +228,13 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                   >
                     <td>{submissions.length - i}</td>
                     <td className="time-cell">
-                      {new Date(sub.submittedAt).toLocaleString(undefined, {
-                        dateStyle: 'short',
-                        timeStyle: 'short'
+                      {formatISTDate(sub.submittedAt, {
+                        month: 'numeric',
+                        day: 'numeric',
+                        year: '2-digit',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
                       })}
                     </td>
                     <td className="email-cell">
@@ -384,7 +296,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                 </span>
                 <span>
                   <strong>Submitted:</strong>{' '}
-                  {new Date(submissions[selectedIndex].submittedAt).toLocaleString()}
+                  {formatISTDate(submissions[selectedIndex].submittedAt)}
                 </span>
                 <span>
                   <strong>Submitter IP:</strong>{' '}
@@ -436,7 +348,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               <div>
                 <h2>Submission Details</h2>
                 <div className="modal-subtext">
-                  Submitted by {activeModalSubmission.submitterEmail || 'N/A'} on {new Date(activeModalSubmission.submittedAt).toLocaleString()}
+                  Submitted by {activeModalSubmission.submitterEmail || 'N/A'} on {formatISTDate(activeModalSubmission.submittedAt)}
                 </div>
               </div>
               <button
