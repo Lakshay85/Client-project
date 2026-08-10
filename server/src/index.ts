@@ -5,7 +5,8 @@ import express, { NextFunction, Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2';
-import { pool } from './database/connection.js';
+import { pool, testDatabaseConnection } from './database/connection.js';
+import { initializeDatabase } from './database/init.js';
 
 type User = RowDataPacket & { id: string; name: string; email: string; password_hash: string | null; google_id?: string | null; status: 'active' | 'disabled'; created_at: Date };
 type PublicUser = { id: string; name: string; email: string; createdAt: string };
@@ -724,4 +725,21 @@ app.use((error: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ message: 'Something went wrong.' });
 });
 
-app.listen(port, () => console.log(`API running at http://localhost:${port}`));
+async function startServer() {
+  try {
+    console.log('Initializing MySQL database schema...');
+    await initializeDatabase();
+    const isConnected = await testDatabaseConnection();
+    if (isConnected) {
+      console.log('✅ MySQL Database connected successfully!');
+    } else {
+      console.warn('⚠️ Warning: MySQL database connection check failed. Please check your DB credentials in .env.');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize MySQL database:', error);
+  }
+
+  app.listen(port, () => console.log(`API running at http://localhost:${port}`));
+}
+
+startServer();

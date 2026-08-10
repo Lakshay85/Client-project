@@ -2752,6 +2752,7 @@ select { cursor: pointer; }
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .sidebar-menu-item:hover {

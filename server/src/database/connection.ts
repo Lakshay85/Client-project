@@ -14,3 +14,16 @@ export const pool = mysql.createPool({
   queueLimit: 0,
   timezone: 'Z'
 });
+
+export async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    return true;
+  } catch (error) {
+    console.error('MySQL connection failed:', error);
+    return false;
+  }
+}
+

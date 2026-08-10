@@ -200,35 +200,6 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
           boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)'
         }}
       >
-        <div
-          className="search-box"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            background: 'rgba(255, 255, 255, 0.06)',
-            padding: '12px 18px',
-            borderRadius: '20px',
-            border: '1px solid rgba(255, 255, 255, 0.12)'
-          }}
-        >
-          <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-            <Icon name="search" size={18} />
-          </span>
-          <input
-            type="text"
-            placeholder="Search templates by title, keyword or question type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: '#ffffff', fontWeight: 500 }}
-          />
-          {searchTerm && (
-            <button className="clear-search-btn" onClick={() => setSearchTerm('')} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-              <Icon name="x" size={14} />
-            </button>
-          )}
-        </div>
-
         <div className="category-tabs" style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
           {['all', 'Feedback', 'Events', 'HR', 'Contact', 'Product'].map((cat) => {
             const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase();
