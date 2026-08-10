@@ -4,6 +4,7 @@ import { Icon } from './Icons';
 import { Form } from './types';
 import { TiltCard } from './components/TiltCard';
 import { Button3D } from './components/Button3D';
+import { BrandLogo3D } from './components/BrandLogo3D';
 
 interface PublicFormProps {
   shareId: string;
@@ -22,7 +23,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
       try {
         const u = JSON.parse(savedUser);
         if (u.email) return u.email;
-      } catch (e) {}
+      } catch (e) { }
     }
     return '';
   });
@@ -171,9 +172,9 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
             <div className="success-icon" style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', margin: '0 auto 20px', boxShadow: '0 0 25px rgba(16, 185, 129, 0.4)' }}>
               <Icon name="check" size={32} />
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 8px' }}>Response Submitted!</h2>
-            <p style={{ color: 'var(--slate-600)', fontSize: '15px', margin: '0 0 24px', lineHeight: 1.5 }}>
-              Thank you for submitting your response for <strong style={{ color: 'var(--primary)' }}>{form?.title}</strong>.
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>Response Submitted!</h2>
+            <p style={{ color: '#94a3b8', fontSize: '15px', margin: '0 0 24px', lineHeight: 1.5 }}>
+              Thank you for submitting your response for <strong style={{ color: '#06b6d4' }}>{form?.title}</strong>.
             </p>
             <div className="success-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <Button3D variant="primary" size="md" onClick={handleSubmitAnother}>
@@ -201,15 +202,12 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
       <div className="orb-bg" style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', filter: 'blur(50px)' }} />
 
       <nav className="public-form-nav" style={{ maxWidth: '680px', margin: '0 auto 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-        <a className="brand" onClick={onHomeClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" style={{ width: '28px', height: '28px' }} />
-          <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>form<span style={{ color: '#2dd4bf' }}>Enclave</span></span>
-        </a>
+        <BrandLogo3D onClick={onHomeClick} logoSize={72} fontSize="36px" />
       </nav>
 
       <form className="public-form-container" onSubmit={handleSubmit} style={{ maxWidth: '680px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
         {/* 3D Progress Bar */}
-        <div style={{ marginBottom: '20px', background: 'rgba(255, 255, 255, 0.1)', padding: '12px 16px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+        <div style={{ marginBottom: '20px', background: 'rgba(255, 255, 255, 0.08)', padding: '12px 16px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#5eead4', marginBottom: '6px' }}>
             <span>PROGRESS</span>
             <span>{progressPercent}% Complete</span>
@@ -222,15 +220,15 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
         <TiltCard maxRotateX={6} maxRotateY={6} glowColor="rgba(6, 182, 212, 0.3)">
           <div className="clay-card" style={{ padding: '32px' }}>
             {/* Header */}
-            <div className="form-header-card" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>{form?.title}</h1>
+            <div className="form-header-card" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', background: 'transparent' }}>
+              <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>{form?.title}</h1>
               {form?.description && (
                 <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0 0 16px', lineHeight: 1.6 }}>{form.description}</p>
               )}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: 'var(--slate-500)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
                 <span>* Required field</span>
                 {isRestricted && (
-                  <span style={{ padding: '4px 10px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.1)', color: '#7c3aed', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ padding: '4px 10px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
                     <Icon name="lock" size={13} /> Restricted Access Form
                   </span>
                 )}
@@ -239,8 +237,8 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
             {/* Submitter Email Verification Card */}
             {isRestricted && (
-              <div style={{ marginBottom: '24px', padding: '20px', background: 'rgba(240, 253, 250, 0.6)', borderRadius: '14px', border: '1px solid var(--primary-border)' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--slate-900)', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '24px', padding: '20px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '6px' }}>
                   Security Verification: Your Email Address <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
@@ -249,24 +247,24 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
                   value={submitterEmail}
                   onChange={(e) => setSubmitterEmail(e.target.value)}
                   required
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--slate-300)', fontSize: '14px', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#ffffff', fontSize: '14px', outline: 'none' }}
                 />
-                <div style={{ fontSize: '12px', color: 'var(--slate-600)', marginTop: '6px' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
                   Only authorized email addresses whitelisted by the form creator can submit.
                 </div>
               </div>
             )}
 
             {error && (
-              <div className={`public-alert ${authDenied ? 'alert-danger-prominent' : 'error'}`} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#dc2626', marginBottom: '24px' }}>
+              <div className={`public-alert ${authDenied ? 'alert-danger-prominent' : 'error'}`} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#f87171', marginBottom: '24px' }}>
                 {authDenied ? (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ color: '#dc2626' }}><Icon name="block" size={24} /></div>
+                    <div style={{ color: '#f87171' }}><Icon name="block" size={24} /></div>
                     <div>
-                      <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700 }}>
+                      <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>
                         Access Denied
                       </h4>
-                      <p style={{ margin: 0, fontSize: '13px' }}>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
                         The email ID (<strong>{submitterEmail || 'provided'}</strong>) does not have permission to submit this form.
                       </p>
                     </div>
@@ -280,14 +278,14 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
             {/* Dynamic Input Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {form?.fields?.map((field) => (
-                <div key={field.id} className="field-card" style={{ padding: '20px', borderRadius: '12px', background: 'var(--slate-50)', border: '1px solid var(--slate-200)' }}>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--slate-900)', marginBottom: '4px' }}>
+                <div key={field.id} className="field-card" style={{ padding: '20px', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
                     {field.label}
                     {field.isRequired && <span style={{ color: '#ef4444' }}> *</span>}
                   </label>
 
                   {field.helpText && (
-                    <div style={{ fontSize: '12px', color: 'var(--slate-500)', marginBottom: '8px' }}>{field.helpText}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>{field.helpText}</div>
                   )}
 
                   <div className="field-input-box" style={{ marginTop: '8px' }}>

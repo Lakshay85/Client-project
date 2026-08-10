@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../Icons';
+import { BrandLogo3D } from '../components/BrandLogo3D';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -46,10 +47,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   return (
     <main className="auth-page app-shell">
       <nav className="top-nav auth-nav">
-        <a className="brand" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <img src="/logo.png" alt="Form Enclave Logo" className="brand-logo-img" />
-          form<span>Enclave</span>
-        </a>
+        <BrandLogo3D onClick={() => navigate('/')} logoSize={44} fontSize="22px" />
 
         <button
           className="text-button back-home-btn"

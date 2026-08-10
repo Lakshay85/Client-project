@@ -137,7 +137,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
         </div>
 
         <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="view-switch" style={{ display: 'flex', gap: '4px', background: 'var(--slate-100)', padding: '4px', borderRadius: '12px', border: '1px solid var(--slate-300)' }}>
+          <div className="view-switch" style={{ display: 'flex', gap: '4px', background: 'rgba(15, 23, 42, 0.7)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <Button3D
               variant={viewMode === 'summary' ? 'primary' : 'ghost'}
               size="sm"
@@ -178,12 +178,12 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
 
       {submissions.length === 0 ? (
         <TiltCard maxRotateX={6} maxRotateY={6}>
-          <div className="empty-responses-card" style={{ padding: '48px', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="empty-responses-card" style={{ padding: '48px', textAlign: 'center', color: '#ffffff' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Icon name="email" size={32} />
             </div>
-            <h2>No Submissions Yet</h2>
-            <p style={{ color: 'var(--slate-500)' }}>Share your public form link with users to start receiving responses.</p>
+            <h2 style={{ color: '#ffffff', fontSize: '24px', fontWeight: 800, margin: '0 0 8px' }}>No Submissions Yet</h2>
+            <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>Share your public form link with users to start receiving responses.</p>
           </div>
         </TiltCard>
       ) : viewMode === 'summary' ? (

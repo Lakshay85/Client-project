@@ -23,7 +23,7 @@ export const DashboardLayout: React.FC = () => {
         <div>
           {/* Sidebar Brand Header with Transparent Logo */}
           <div style={{ padding: '16px 20px 24px' }}>
-            <BrandLogo3D logoSize={46} fontSize="22px" onClick={() => navigate('/dashboard')} />
+            <BrandLogo3D logoSize={46} showText={false} onClick={() => navigate('/dashboard')} />
           </div>
 
           {/* Sidebar Menu Items */}

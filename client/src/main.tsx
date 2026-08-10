@@ -33,6 +33,8 @@ function AppContent() {
   const [forms, setForms] = useState<Form[]>([]);
   const [fetchingForms, setFetchingForms] = useState(false);
   const [shareModalShareId, setShareModalShareId] = useState<string | null>(null);
+  const [deleteConfirmFormId, setDeleteConfirmFormId] = useState<string | null>(null);
+  const [deletingForm, setDeletingForm] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
 
   // Handle Google OAuth Redirect & Params
@@ -81,18 +83,26 @@ function AppContent() {
     }
   };
 
-  const deleteForm = async (id: string) => {
-    if (!token || !confirm('Are you sure you want to delete this form and all its responses?')) return;
+  const confirmDeleteForm = (id: string) => {
+    setDeleteConfirmFormId(id);
+  };
+
+  const executeDeleteForm = async () => {
+    if (!token || !deleteConfirmFormId) return;
+    setDeletingForm(true);
     try {
-      const response = await fetch(`${apiUrl}/api/forms/${id}`, {
+      const response = await fetch(`${apiUrl}/api/forms/${deleteConfirmFormId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
-        setForms((prev) => prev.filter((f) => f.id !== id));
+        setForms((prev) => prev.filter((f) => f.id !== deleteConfirmFormId));
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setDeletingForm(false);
+      setDeleteConfirmFormId(null);
     }
   };
 
@@ -125,6 +135,91 @@ function AppContent() {
         </div>
       )}
 
+      {/* 3D Glass Delete Confirmation Modal */}
+      {deleteConfirmFormId && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(10, 13, 20, 0.8)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999,
+            padding: '20px'
+          }}
+        >
+          <TiltCard
+            maxRotateX={8}
+            maxRotateY={8}
+            glowColor="rgba(239, 68, 68, 0.4)"
+            style={{ width: '100%', maxWidth: '440px', height: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          >
+            <div
+              className="modal-card"
+              style={{
+                padding: '32px 28px',
+                width: '100%',
+                maxWidth: '440px',
+                textAlign: 'center',
+                background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+                color: '#ffffff'
+              }}
+            >
+              <div
+                className="modal-icon-badge"
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  margin: '0 auto 16px',
+                  boxShadow: '0 0 24px rgba(239, 68, 68, 0.45)'
+                }}
+              >
+                <Icon name="trash" size={28} />
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>
+                Delete Form?
+              </h2>
+              <p style={{ color: '#94a3b8', fontSize: '13.5px', margin: '0 0 24px', lineHeight: 1.5 }}>
+                Are you sure you want to delete this form? All form fields and collected responses will be permanently deleted.
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <Button3D
+                  variant="ghost"
+                  size="md"
+                  onClick={() => setDeleteConfirmFormId(null)}
+                  disabled={deletingForm}
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </Button3D>
+                <Button3D
+                  variant="danger"
+                  size="md"
+                  onClick={executeDeleteForm}
+                  loading={deletingForm}
+                  style={{ flex: 1 }}
+                >
+                  Delete
+                </Button3D>
+              </div>
+            </div>
+          </TiltCard>
+        </div>
+      )}
+
       {/* 3D Glass Share Modal Dialog */}
       {shareModalShareId && (
         <div
@@ -141,7 +236,12 @@ function AppContent() {
             padding: '20px'
           }}
         >
-          <TiltCard maxRotateX={8} maxRotateY={8} glowColor="rgba(79, 70, 229, 0.4)">
+          <TiltCard
+            maxRotateX={8}
+            maxRotateY={8}
+            glowColor="rgba(79, 70, 229, 0.4)"
+            style={{ width: '100%', maxWidth: '480px', height: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          >
             <div
               className="modal-card"
               style={{
@@ -149,8 +249,11 @@ function AppContent() {
                 width: '100%',
                 maxWidth: '480px',
                 textAlign: 'center',
-                background: '#ffffff',
-                borderRadius: 'var(--radius-lg)'
+                background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                color: '#ffffff'
               }}
             >
               <div
@@ -170,10 +273,10 @@ function AppContent() {
               >
                 <Icon name="check" size={32} />
               </div>
-              <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 8px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>
                 Form Published Successfully!
               </h2>
-              <p style={{ color: 'var(--slate-600)', fontSize: '14px', margin: '0 0 24px' }}>
+              <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 24px' }}>
                 Your form is live and ready to collect responses from users.
               </p>
 
@@ -183,10 +286,10 @@ function AppContent() {
                   display: 'flex',
                   gap: '8px',
                   marginBottom: '24px',
-                  background: 'var(--slate-100)',
+                  background: 'rgba(15, 23, 42, 0.7)',
                   padding: '6px',
                   borderRadius: '12px',
-                  border: '1px solid var(--slate-300)'
+                  border: '1px solid rgba(255, 255, 255, 0.12)'
                 }}
               >
                 <input
@@ -199,7 +302,7 @@ function AppContent() {
                     background: 'transparent',
                     padding: '8px 12px',
                     fontSize: '13px',
-                    color: 'var(--slate-800)',
+                    color: '#ffffff',
                     fontWeight: 600,
                     outline: 'none'
                   }}
@@ -267,7 +370,7 @@ function AppContent() {
                     fetchingForms={fetchingForms}
                     onCopyLink={copyShareLink}
                     onEditForm={handleEditForm}
-                    onDeleteForm={deleteForm}
+                    onDeleteForm={confirmDeleteForm}
                   />
                 }
               />
