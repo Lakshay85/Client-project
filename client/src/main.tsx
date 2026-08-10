@@ -40,11 +40,32 @@ function AppContent() {
   // Handle Google OAuth Redirect & Params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const oauthCodeFromUrl = params.get('oauth_code');
     const tokenFromUrl = params.get('token');
     const userFromUrl = params.get('user');
     const authErrorFromUrl = params.get('auth_error');
 
-    if (tokenFromUrl && userFromUrl) {
+    if (oauthCodeFromUrl) {
+      fetch(`${apiUrl}/api/auth/google/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: oauthCodeFromUrl })
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('OAuth code exchange failed');
+          return res.json();
+        })
+        .then((data: { token: string; user: User }) => {
+          login(data.token, data.user);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          navigate('/dashboard', { replace: true });
+        })
+        .catch((e) => {
+          console.error('Failed to exchange OAuth code', e);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          navigate('/login', { replace: true });
+        });
+    } else if (tokenFromUrl && userFromUrl) {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userFromUrl)) as User;
         login(tokenFromUrl, parsedUser);
@@ -57,7 +78,7 @@ function AppContent() {
       window.history.replaceState({}, document.title, window.location.pathname);
       navigate('/login', { replace: true });
     }
-  }, [login, navigate]);
+  }, [apiUrl, login, navigate]);
 
   // Fetch workspace forms when authenticated
   useEffect(() => {

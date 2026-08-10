@@ -46,6 +46,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
+  React.useEffect(() => {
+    if (!token) return;
+    fetch(`${apiUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((res) => {
+        if (!res.ok) {
+          logout();
+        } else {
+          return res.json();
+        }
+      })
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user);
+          localStorage.setItem('formenclave_user', JSON.stringify(data.user));
+        }
+      })
+      .catch(() => {
+        logout();
+      });
+  }, [token]);
+
   return (
     <AuthContext.Provider value={{ user, token, apiUrl, login, logout }}>
       {children}

@@ -33,6 +33,34 @@ function formatISTDate(dateStr: string | Date, options?: Intl.DateTimeFormatOpti
   });
 }
 
+export function exportCSVContent(
+  formTitle: string,
+  fields: FormField[],
+  submissions: FormSubmission[]
+): string {
+  const headers = [
+    'Submission ID',
+    'Submitted At',
+    'Submitter Email',
+    'Submitter IP',
+    ...fields.map((f) => `"${f.label.replace(/"/g, '""')}"`)
+  ].join(',');
+  const rows = submissions.map((sub) => {
+    const answers = fields.map((f) => {
+      const val = sub.answers[f.id] || '';
+      return `"${String(val).replace(/"/g, '""')}"`;
+    });
+    return [
+      sub.id,
+      formatISTDate(sub.submittedAt),
+      `"${String(sub.submitterEmail || 'N/A').replace(/"/g, '""')}"`,
+      sub.submitterIp || 'N/A',
+      ...answers
+    ].join(',');
+  });
+  return [headers, ...rows].join('\n');
+}
+
 export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesProps) {
   const [formTitle, setFormTitle] = useState('');
   const [fields, setFields] = useState<FormField[]>([]);
@@ -74,31 +102,11 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
 
   const exportCSV = () => {
     if (submissions.length === 0) return;
-    const headers = [
-      'Submission ID',
-      'Submitted At',
-      'Submitter Email',
-      'Submitter IP',
-      ...fields.map((f) => `"${f.label.replace(/"/g, '""')}"`)
-    ].join(',');
-    const rows = submissions.map((sub) => {
-      const answers = fields.map((f) => {
-        const val = sub.answers[f.id] || '';
-        return `"${String(val).replace(/"/g, '""')}"`;
-      });
-      return [
-        sub.id,
-        formatISTDate(sub.submittedAt),
-        `"${String(sub.submitterEmail || 'N/A').replace(/"/g, '""')}"`,
-        sub.submitterIp || 'N/A',
-        ...answers
-      ].join(',');
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const content = exportCSVContent(formTitle, fields, submissions);
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute(
       'download',
       `${formTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_responses.csv`
@@ -106,6 +114,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const parseAnswerValue = (rawVal?: string): string => {

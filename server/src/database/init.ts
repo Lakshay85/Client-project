@@ -3,11 +3,15 @@ import mysql from 'mysql2/promise';
 import { databaseName } from './connection.js';
 
 export async function initializeDatabase(): Promise<void> {
+  if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
+    throw new Error('Invalid DB_NAME provided: contains illegal characters.');
+  }
+
   const rootConnection = await mysql.createConnection({
     host: process.env.DB_HOST ?? '127.0.0.1',
     port: Number(process.env.DB_PORT ?? 3306),
     user: process.env.DB_USER ?? 'root',
-    password: process.env.DB_PASSWORD ?? 'root@123'
+    password: process.env.DB_PASSWORD
   });
 
   await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${databaseName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);

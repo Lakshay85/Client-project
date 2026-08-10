@@ -1,7 +1,10 @@
 import 'dotenv/config';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2';
@@ -12,10 +15,44 @@ type User = RowDataPacket & { id: string; name: string; email: string; password_
 type PublicUser = { id: string; name: string; email: string; createdAt: string };
 
 const port = Number(process.env.PORT ?? 4000);
-const jwtSecret = process.env.JWT_SECRET ?? 'development-only-secret-change-me';
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret === 'development-only-secret-change-me' || jwtSecret === 'change-this-development-secret-before-deploying') {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing or set to a default value.');
+  }
+}
+const effectiveJwtSecret = jwtSecret || 'development-only-secret-change-me';
+
 const app = express();
+app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { message: 'Too many authentication attempts, please try again after 15 minutes.' }
+});
+
+const submitRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  message: { message: 'Too many form submissions. Please wait a moment before trying again.' }
+});
+
+interface OAuthSession {
+  token: string;
+  user: PublicUser;
+  expiresAt: number;
+}
+const oauthCodeStore = new Map<string, OAuthSession>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, session] of oauthCodeStore.entries()) {
+    if (session.expiresAt < now) oauthCodeStore.delete(code);
+  }
+}, 5 * 60 * 1000);
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -23,7 +60,7 @@ const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4
 const googleClient = new OAuth2Client(googleClientId, googleClientSecret, googleRedirectUri);
 
 const publicUser = (user: User): PublicUser => ({ id: user.id, name: user.name, email: user.email, createdAt: new Date(user.created_at).toISOString() });
-const issueToken = (user: User) => jwt.sign({ sub: user.id, email: user.email }, jwtSecret, { expiresIn: '7d' });
+const issueToken = (user: User) => jwt.sign({ sub: user.id, email: user.email }, effectiveJwtSecret, { expiresIn: '7d' });
 const validEmail = (value: unknown): value is string => typeof value === 'string' && /^\S+@\S+\.\S+$/.test(value);
 const clientIp = (req: Request) => req.ip || req.socket.remoteAddress || null;
 
@@ -46,7 +83,7 @@ app.get('/api/health', async (_req, res, next) => {
   try { await pool.query('SELECT 1'); res.json({ status: 'ok', database: 'connected' }); } catch (error) { next(error); }
 });
 
-app.post('/api/auth/signup', async (req, res, next) => {
+app.post('/api/auth/signup', authRateLimiter, async (req, res, next) => {
   try {
     const { name, email, password } = req.body as Record<string, unknown>;
     if (typeof name !== 'string' || name.trim().length < 2 || !validEmail(email) || typeof password !== 'string' || password.length < 8) {
@@ -62,7 +99,7 @@ app.post('/api/auth/signup', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-app.post('/api/auth/login', async (req, res, next) => {
+app.post('/api/auth/login', authRateLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body as Record<string, unknown>;
     if (!validEmail(email) || typeof password !== 'string') return res.status(400).json({ message: 'Email and password are required.' });
@@ -87,10 +124,10 @@ app.get('/api/auth/google/url', (_req, res) => {
     ],
     prompt: 'select_account'
   });
-  return res.json({ url, clientId: googleClientId });
+  return res.json({ url });
 });
 
-app.get('/api/auth/google', (_req, res) => {
+app.get('/api/auth/google', authRateLimiter, (_req, res) => {
   const url = googleClient.generateAuthUrl({
     access_type: 'offline',
     scope: [
@@ -152,15 +189,33 @@ app.get('/api/auth/google/callback', async (req, res, next) => {
     await pool.execute('INSERT INTO login_events (user_id, ip_address, user_agent) VALUES (?, ?, ?)', [user.id, clientIp(req), req.get('user-agent')?.slice(0, 500) ?? null]);
 
     const token = issueToken(user);
-    const userJson = encodeURIComponent(JSON.stringify(publicUser(user)));
-    return res.redirect(`${clientOrigin}/?token=${encodeURIComponent(token)}&user=${userJson}`);
+    const exchangeCode = crypto.randomBytes(32).toString('hex');
+    oauthCodeStore.set(exchangeCode, {
+      token,
+      user: publicUser(user),
+      expiresAt: Date.now() + 60 * 1000
+    });
+    return res.redirect(`${clientOrigin}/?oauth_code=${exchangeCode}`);
   } catch (error) {
     console.error('Google OAuth error:', error);
     return res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Google authentication failed')}`);
   }
 });
 
-app.post('/api/auth/google', async (req, res, next) => {
+app.post('/api/auth/google/exchange', (req, res) => {
+  const { code } = req.body as { code?: string };
+  if (!code || !oauthCodeStore.has(code)) {
+    return res.status(400).json({ message: 'Invalid or expired authorization code.' });
+  }
+  const session = oauthCodeStore.get(code)!;
+  oauthCodeStore.delete(code);
+  if (session.expiresAt < Date.now()) {
+    return res.status(400).json({ message: 'Authorization code has expired.' });
+  }
+  return res.json({ token: session.token, user: session.user });
+});
+
+app.post('/api/auth/google', authRateLimiter, async (req, res, next) => {
   try {
     const { idToken, code, credential } = req.body as { idToken?: string; code?: string; credential?: string };
     const tokenToVerify = idToken || credential;
@@ -222,7 +277,7 @@ app.get('/api/auth/me', async (req, res, next) => {
   try {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) return res.status(401).json({ message: 'Authentication required.' });
-    const payload = jwt.verify(header.slice(7), jwtSecret) as jwt.JwtPayload;
+    const payload = jwt.verify(header.slice(7), effectiveJwtSecret) as jwt.JwtPayload;
     const user = typeof payload.sub === 'string' ? await findUserById(payload.sub) : undefined;
     if (!user || user.status !== 'active') return res.status(401).json({ message: 'User is not available.' });
     return res.json({ user: publicUser(user) });
@@ -238,7 +293,7 @@ async function authenticate(req: AuthRequest, res: Response, next: NextFunction)
   try {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) return res.status(401).json({ message: 'Authentication required.' });
-    const payload = jwt.verify(header.slice(7), jwtSecret) as jwt.JwtPayload;
+    const payload = jwt.verify(header.slice(7), effectiveJwtSecret) as jwt.JwtPayload;
     const user = typeof payload.sub === 'string' ? await findUserById(payload.sub) : undefined;
     if (!user || user.status !== 'active') return res.status(401).json({ message: 'User is not available.' });
     req.user = user;
@@ -248,7 +303,7 @@ async function authenticate(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
-const generateShareId = () => Math.random().toString(36).substring(2, 10);
+const generateShareId = () => crypto.randomBytes(6).toString('hex');
 
 // --- Form Builder API Routes ---
 
@@ -608,7 +663,7 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
 });
 
 // 8. Public Form Submission with Access Enforcement
-app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
+app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res, next) => {
   try {
     const { shareId } = req.params;
     const { answers, submitterEmail } = req.body as { answers?: Record<string, unknown>; submitterEmail?: string };
@@ -631,7 +686,7 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
     // Also check Bearer token if header present and email wasn't explicitly passed
     if (!emailToUse && req.headers.authorization?.startsWith('Bearer ')) {
       try {
-        const payload = jwt.verify(req.headers.authorization.slice(7), jwtSecret) as jwt.JwtPayload;
+        const payload = jwt.verify(req.headers.authorization.slice(7), effectiveJwtSecret) as jwt.JwtPayload;
         if (typeof payload.email === 'string') {
           emailToUse = payload.email.trim().toLowerCase();
         }
@@ -701,9 +756,11 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
       [submissionId, formId, ip, emailToUse]
     );
 
+    const validFieldIds = new Set(fields.map(f => f.id));
+
     if (answers && typeof answers === 'object') {
       for (const [fieldId, val] of Object.entries(answers)) {
-        if (val !== undefined && val !== null) {
+        if (validFieldIds.has(fieldId) && val !== undefined && val !== null) {
           const formattedVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
           await pool.execute(
             'INSERT INTO form_submission_answers (submission_id, field_id, answer_value) VALUES (?, ?, ?)',
@@ -719,8 +776,10 @@ app.post('/api/public/forms/:shareId/submit', async (req, res, next) => {
 
 app.use((_req, res) => res.status(404).json({ message: 'Route not found.' }));
 app.use((error: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(error);
-  res.status(500).json({ message: 'Something went wrong.' });
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(error);
+  }
+  res.status(500).json({ message: 'An internal server error occurred.' });
 });
 
 async function startServer() {
@@ -728,13 +787,14 @@ async function startServer() {
     console.log('Initializing MySQL database schema...');
     await initializeDatabase();
     const isConnected = await testDatabaseConnection();
-    if (isConnected) {
-      console.log('✅ MySQL Database connected successfully!');
-    } else {
-      console.warn('⚠️ Warning: MySQL database connection check failed. Please check your DB credentials in .env.');
+    if (!isConnected) {
+      console.error('❌ Warning: MySQL database connection failed.');
+      process.exit(1);
     }
+    console.log('✅ MySQL Database connected successfully!');
   } catch (error) {
     console.error('❌ Failed to initialize MySQL database:', error);
+    process.exit(1);
   }
 
   app.listen(port, () => console.log(`API running at http://localhost:${port}`));
