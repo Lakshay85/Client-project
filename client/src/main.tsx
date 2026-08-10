@@ -257,26 +257,30 @@ function AppContent() {
 
         {/* Protected Dashboard Layout Routes */}
         {user ? (
-          <Route element={<DashboardLayout />}>
-            <Route
-              path="/dashboard"
-              element={
-                <DashboardPage
-                  forms={forms}
-                  fetchingForms={fetchingForms}
-                  onCopyLink={copyShareLink}
-                  onEditForm={handleEditForm}
-                  onDeleteForm={deleteForm}
-                />
-              }
-            />
-            <Route path="/my-forms" element={<MyFormsPage />} />
-            <Route
-              path="/analytics"
-              element={<AnalyticsPage forms={forms} fetchingForms={fetchingForms} />}
-            />
-            <Route path="/analytics/:formId" element={<FormResponsesPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+          <>
+            <Route element={<DashboardLayout />}>
+              <Route
+                path="/dashboard"
+                element={
+                  <DashboardPage
+                    forms={forms}
+                    fetchingForms={fetchingForms}
+                    onCopyLink={copyShareLink}
+                    onEditForm={handleEditForm}
+                    onDeleteForm={deleteForm}
+                  />
+                }
+              />
+              <Route path="/my-forms" element={<MyFormsPage />} />
+              <Route
+                path="/analytics"
+                element={<AnalyticsPage forms={forms} fetchingForms={fetchingForms} />}
+              />
+              <Route path="/analytics/:formId" element={<FormResponsesPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+
+            {/* Standalone Fullscreen Form Builder Routes */}
             <Route
               path="/builder"
               element={<FormBuilderPage onFormCreated={handleFormCreated} />}
@@ -285,7 +289,7 @@ function AppContent() {
               path="/builder/:formId"
               element={<FormBuilderPage onFormCreated={handleFormCreated} />}
             />
-          </Route>
+          </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}

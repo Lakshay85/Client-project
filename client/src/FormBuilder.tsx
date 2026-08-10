@@ -277,7 +277,7 @@ export function FormBuilder({
   return (
     <div className="form-builder-container">
       {/* Top Header Toolbar */}
-      <header className="builder-header" style={{ padding: '16px 24px', background: 'var(--glass-bg-card)', backdropFilter: 'var(--glass-blur-md)', borderBottom: '1px solid var(--glass-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="builder-header" style={{ padding: '16px 24px', background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
             Back
@@ -285,7 +285,7 @@ export function FormBuilder({
         </div>
 
         <div className="header-center">
-          <div className="mode-toggle" style={{ display: 'flex', gap: '6px', background: 'var(--slate-100)', padding: '4px', borderRadius: '12px', border: '1px solid var(--slate-300)' }}>
+          <div className="mode-toggle" style={{ display: 'flex', gap: '6px', background: 'rgba(15, 23, 42, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <Button3D
               variant={!isPreview ? 'primary' : 'ghost'}
               size="sm"
