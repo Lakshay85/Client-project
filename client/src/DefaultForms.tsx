@@ -168,10 +168,10 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
           background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
           borderRadius: '24px',
           padding: '28px 32px',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
           color: '#ffffff',
           marginBottom: '28px',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)'
+          boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)'
         }}
       >
         <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -191,11 +191,11 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
           borderRadius: '24px',
           background: 'linear-gradient(145deg, #0e172a 0%, #070c18 100%)',
           border: '1.5px solid rgba(255, 255, 255, 0.15)',
-          marginBottom: '30px',
+          marginBottom: '16px',
           boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)'
         }}
       >
-        <div className="category-tabs" style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+        <div className="category-tabs" style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
           {['all', 'Feedback', 'Events', 'HR', 'Contact', 'Product'].map((cat) => {
             const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase();
             return (

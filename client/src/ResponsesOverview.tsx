@@ -33,11 +33,11 @@ export function ResponsesOverview({
   return (
     <div className="responses-overview-page">
       {/* Header Toolbar */}
-      <header className="responses-hub-header" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 'var(--radius-xl)', padding: '24px 32px', marginBottom: '24px', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)' }}>
+      <header className="responses-hub-header" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', padding: '28px 32px', marginBottom: '28px', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)' }}>
         <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>Responses & Submissions Hub 3D</h1>
-            <p style={{ color: '#94a3b8', margin: 0 }}>Select any form to inspect detailed response records, export CSV reports, and track analytics.</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', letterSpacing: '-0.01em' }}>Responses & Submissions Hub 3D</h1>
+            <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px' }}>Select any form to inspect detailed response records, export CSV reports, and track analytics.</p>
           </div>
         </div>
       </header>

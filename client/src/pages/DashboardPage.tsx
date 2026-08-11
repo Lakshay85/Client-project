@@ -30,9 +30,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         className="dashboard-hero"
         style={{
           background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '40px 32px',
-          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '24px',
+          padding: '28px 32px',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
           color: '#ffffff',
           marginBottom: '28px',
           boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)'

@@ -143,7 +143,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   return (
     <div className="responses-container">
       {/* Header Toolbar */}
-      <header className="responses-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <header className="responses-header" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', padding: '28px 32px', marginBottom: '28px', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
             Back
