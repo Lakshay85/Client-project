@@ -25,7 +25,19 @@ const effectiveJwtSecret = jwtSecret || 'development-only-secret-change-me';
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
+
+const rawAllowedOrigins = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+const allowedOrigins = rawAllowedOrigins.split(',').map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || rawAllowedOrigins === '*' || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 const authRateLimiter = rateLimit({
