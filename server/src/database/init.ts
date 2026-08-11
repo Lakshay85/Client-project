@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import mysql from 'mysql2/promise';
+import mysql, { ConnectionOptions } from 'mysql2/promise';
 import { databaseName } from './connection.js';
 
 export async function initializeDatabase(): Promise<void> {
@@ -7,12 +7,20 @@ export async function initializeDatabase(): Promise<void> {
     throw new Error('Invalid DB_NAME provided: contains illegal characters.');
   }
 
-  const rootConnection = await mysql.createConnection({
-    host: process.env.DB_HOST ?? '127.0.0.1',
-    port: Number(process.env.DB_PORT ?? 3306),
-    user: process.env.DB_USER ?? 'root',
-    password: process.env.DB_PASSWORD
-  });
+  const isCloud = (process.env.DB_MODE ?? 'local').toLowerCase() === 'cloud';
+
+  const connectionOptions: ConnectionOptions = {
+    host: isCloud ? (process.env.CLOUD_DB_HOST ?? 'localhost') : (process.env.DB_HOST ?? '127.0.0.1'),
+    port: isCloud ? Number(process.env.CLOUD_DB_PORT ?? 20341) : Number(process.env.DB_PORT ?? 3306),
+    user: isCloud ? (process.env.CLOUD_DB_USER ?? 'avnadmin') : (process.env.DB_USER ?? 'root'),
+    password: isCloud ? process.env.CLOUD_DB_PASSWORD : process.env.DB_PASSWORD
+  };
+
+  if (isCloud && process.env.CLOUD_DB_SSL !== 'false') {
+    connectionOptions.ssl = { rejectUnauthorized: false };
+  }
+
+  const rootConnection = await mysql.createConnection(connectionOptions);
 
   await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${databaseName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
   await rootConnection.query(`USE \`${databaseName}\``);

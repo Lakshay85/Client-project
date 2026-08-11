@@ -627,8 +627,9 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
   try {
     const { shareId } = req.params;
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, created_at as createdAt FROM forms WHERE share_id = ? AND status = "published"',
+      "SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, created_at as createdAt FROM forms WHERE share_id = ? AND status = 'published'",
       [shareId]
+
     );
 
     if (forms.length === 0) {
@@ -669,7 +670,7 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
     const { answers, submitterEmail } = req.body as { answers?: Record<string, unknown>; submitterEmail?: string };
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, title, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = "published"',
+      "SELECT id, title, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = 'published'",
       [shareId]
     );
 
@@ -682,7 +683,7 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
 
     // Validate submitter email
     let emailToUse = typeof submitterEmail === 'string' ? submitterEmail.trim().toLowerCase() : '';
-    
+
     // Also check Bearer token if header present and email wasn't explicitly passed
     if (!emailToUse && req.headers.authorization?.startsWith('Bearer ')) {
       try {
@@ -690,7 +691,7 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
         if (typeof payload.email === 'string') {
           emailToUse = payload.email.trim().toLowerCase();
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Auto-detect email from answers if submitterEmail was not explicitly provided
@@ -709,8 +710,8 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
     const restrictedList: string[] = Array.isArray(rawRestricted)
       ? rawRestricted.map(e => String(e).trim().toLowerCase())
       : typeof rawRestricted === 'string'
-      ? (JSON.parse(rawRestricted) as string[]).map(e => String(e).trim().toLowerCase())
-      : [];
+        ? (JSON.parse(rawRestricted) as string[]).map(e => String(e).trim().toLowerCase())
+        : [];
 
     if (accessType !== 'allow_all') {
       if (!validEmail(emailToUse)) {
