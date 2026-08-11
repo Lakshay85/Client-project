@@ -152,7 +152,8 @@ app.get('/api/auth/google', authRateLimiter, (_req, res) => {
 });
 
 app.get('/api/auth/google/callback', async (req, res, next) => {
-  const clientOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+  const rawClientOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+  const clientOrigin = rawClientOrigin.split(',')[0].trim();
   try {
     const code = req.query.code as string;
     if (!code) {
