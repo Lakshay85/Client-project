@@ -142,14 +142,6 @@ export const FIELD_TEMPLATES: FieldTemplate[] = [
 
   // 4. Special & Advanced Inputs
   {
-    type: 'file',
-    category: 'special',
-    name: 'File Upload',
-    icon: 'file',
-    description: 'Allows users to select and upload documents or images.',
-    defaultLabel: 'Upload Document / Image'
-  },
-  {
     type: 'range',
     category: 'special',
     name: 'Range Slider',

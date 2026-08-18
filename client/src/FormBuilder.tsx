@@ -4,6 +4,7 @@ import { Icon } from './Icons';
 import { FieldTemplate, FormField, FieldType } from './types';
 import { TiltCard } from './components/TiltCard';
 import { Button3D } from './components/Button3D';
+import { ThemeToggle } from './components/ThemeToggle';
 
 interface FormBuilderProps {
   token: string;
@@ -16,6 +17,7 @@ interface FormBuilderProps {
   initialFields?: FormField[];
   initialAccessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
   initialRestrictedEmails?: string[];
+  initialSingleSubmissionOnly?: boolean;
 }
 
 export function FormBuilder({
@@ -28,7 +30,8 @@ export function FormBuilder({
   initialDescription,
   initialFields,
   initialAccessType = 'allow_all',
-  initialRestrictedEmails = []
+  initialRestrictedEmails = [],
+  initialSingleSubmissionOnly = true
 }: FormBuilderProps) {
   const [title, setTitle] = useState(initialTitle || 'Untitled Form');
   const [description, setDescription] = useState(
@@ -38,6 +41,9 @@ export function FormBuilder({
     initialAccessType
   );
   const [restrictedEmails, setRestrictedEmails] = useState<string[]>(initialRestrictedEmails);
+  const [singleSubmissionOnly, setSingleSubmissionOnly] = useState<boolean>(
+    initialSingleSubmissionOnly !== undefined ? initialSingleSubmissionOnly : true
+  );
   const [emailInput, setEmailInput] = useState('');
   const [fields, setFields] = useState<FormField[]>(() => {
     if (initialFields && initialFields.length > 0) {
@@ -76,6 +82,7 @@ export function FormBuilder({
   });
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(fields[0]?.id || null);
+  const [showAccessModal, setShowAccessModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isPreview, setIsPreview] = useState(false);
@@ -235,6 +242,7 @@ export function FormBuilder({
           description: description.trim(),
           accessType,
           restrictedEmails: finalEmails,
+          singleSubmissionOnly,
           fields: fields.map((f) => ({
             id: f.id,
             label: f.label,
@@ -277,42 +285,56 @@ export function FormBuilder({
   return (
     <div className="form-builder-container">
       {/* Top Header Toolbar */}
-      <header className="builder-header" style={{ padding: '16px 24px', background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
+      <header className="builder-header">
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={14} />} onClick={onBack}>
             Back
           </Button3D>
+          <span className="builder-title-badge">
+            Studio
+          </span>
         </div>
 
         <div className="header-center">
-          <div className="mode-toggle" style={{ display: 'flex', gap: '6px', background: 'rgba(15, 23, 42, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <Button3D
-              variant={!isPreview ? 'primary' : 'ghost'}
-              size="sm"
-              icon={<Icon name="edit" size={15} />}
+          <div className="mode-toggle">
+            <button
+              type="button"
+              className={`toggle-btn ${!isPreview ? 'active' : ''}`}
               onClick={() => setIsPreview(false)}
             >
-              Edit Studio
-            </Button3D>
-            <Button3D
-              variant={isPreview ? 'primary' : 'ghost'}
-              size="sm"
-              icon={<Icon name="eye" size={15} />}
+              <Icon name="edit" size={14} /> Edit Studio
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn ${isPreview ? 'active' : ''}`}
               onClick={() => setIsPreview(true)}
             >
-              3D Live Preview
-            </Button3D>
+              <Icon name="eye" size={14} /> Live Preview
+            </button>
           </div>
         </div>
 
-        <div className="header-right">
+        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className={`btn ${accessType !== 'allow_all' || singleSubmissionOnly ? 'btn-3d-primary' : 'btn-outline'} btn-sm`}
+            onClick={() => setShowAccessModal(true)}
+            title="Configure submission access permissions and limits"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Icon name="lock" size={14} />
+            <span>Access & Limits</span>
+            {(accessType !== 'allow_all' || singleSubmissionOnly) && (
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }} />
+            )}
+          </button>
+          <ThemeToggle size="sm" />
           <Button3D
             variant="primary"
             size="md"
-            icon={<Icon name="zap" size={15} />}
+            icon={<Icon name="zap" size={14} />}
             onClick={handlePublish}
             loading={publishing}
-            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
           >
             Publish Form
           </Button3D>
@@ -407,128 +429,52 @@ export function FormBuilder({
                     rows={2}
                   />
 
-                  {/* Submission Access Control Panel */}
-                  <div className="access-control-box">
-                    <div className="access-control-header">
-                      <Icon name="lock" size={16} />
-                      <span>Submission Access Restrictions</span>
-                    </div>
-
-                    <div className="access-options-grid">
-                      <label className={`access-radio-card ${accessType === 'allow_all' ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="accessType"
-                          value="allow_all"
-                          checked={accessType === 'allow_all'}
-                          onChange={() => setAccessType('allow_all')}
-                        />
-                        <div>
-                          <strong>Allow All Users</strong>
-                          <span className="radio-desc">Open access: any valid email ID can submit.</span>
-                        </div>
-                      </label>
-
-                      <label className={`access-radio-card ${accessType === 'allow_only' ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="accessType"
-                          value="allow_only"
-                          checked={accessType === 'allow_only'}
-                          onChange={() => setAccessType('allow_only')}
-                        />
-                        <div>
-                          <strong>Allow Only Specific Users</strong>
-                          <span className="radio-desc">Only specified email IDs can submit (Whitelist).</span>
-                        </div>
-                      </label>
-
-                      <label className={`access-radio-card ${accessType === 'restrict_specific' ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="accessType"
-                          value="restrict_specific"
-                          checked={accessType === 'restrict_specific'}
-                          onChange={() => setAccessType('restrict_specific')}
-                        />
-                        <div>
-                          <strong>Restrict Specific Users</strong>
-                          <span className="radio-desc">Block specific email IDs from submitting (Blacklist).</span>
-                        </div>
-                      </label>
-                    </div>
-
-                    {accessType !== 'allow_all' && (
-                      <div className="email-restriction-input-area">
-                        <label className="input-sublabel">
-                          {accessType === 'allow_only'
-                            ? 'Specify email IDs allowed to submit:'
-                            : 'Specify email IDs restricted from submitting:'}
-                        </label>
-
-                        <div className="email-tag-input-row">
-                          <input
-                            type="email"
-                            placeholder="e.g. user@example.com (Press Enter or Click Add)"
-                            value={emailInput}
-                            onChange={(e) => setEmailInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addEmailTag();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="coral-button btn-sm"
-                            onClick={() => addEmailTag()}
-                          >
-                            + Add Email
-                          </button>
-                        </div>
-
-                        {restrictedEmails.length > 0 && (
-                          <div className="email-tags-wrapper">
-                            {restrictedEmails.map((email) => (
-                              <span key={email} className="email-tag-chip">
-                                {email}
-                                <button
-                                  type="button"
-                                  className="remove-email-btn"
-                                  onClick={() => removeEmailTag(email)}
-                                  title="Remove email"
-                                >
-                                  <Icon name="x" size={12} />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="access-info-note">
-                          {accessType === 'allow_only'
-                            ? `Only ${restrictedEmails.length} specified email address(es) will be allowed.`
-                            : `${restrictedEmails.length} specified email address(es) will be blocked.`}
-                        </div>
-                      </div>
-                    )}
+                  {/* Access Summary Bar (Clickable outside form helper) */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <button
+                      type="button"
+                      className="access-status-chip"
+                      onClick={() => setShowAccessModal(true)}
+                      title="Click to configure who can submit and limit rules"
+                    >
+                      <Icon name="lock" size={13} />
+                      <span>
+                        {accessType === 'allow_all'
+                          ? 'Public Form (All Users)'
+                          : accessType === 'allow_only'
+                            ? `Whitelist (${restrictedEmails.length} allowed)`
+                            : `Blacklist (${restrictedEmails.length} restricted)`}
+                        {singleSubmissionOnly ? ' • Single Submission' : ''}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 600, marginLeft: '4px' }}>
+                        Configure ⚙
+                      </span>
+                    </button>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>* Required field indicator</span>
                   </div>
                 </>
               ) : (
                 <>
                   <h1 className="preview-title">{title}</h1>
                   {description && <p className="preview-description">{description}</p>}
-                  {accessType !== 'allow_all' && (
-                    <div className="preview-access-badge">
-                      <Icon name="lock" size={14} />
-                      <span>
-                        {accessType === 'allow_only'
-                          ? `Access Restricted: Only ${restrictedEmails.length} authorized user email(s) can submit`
-                          : `Access Restricted: ${restrictedEmails.length} user email(s) restricted`}
-                      </span>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                    {accessType !== 'allow_all' && (
+                      <div className="preview-access-badge">
+                        <Icon name="lock" size={14} />
+                        <span>
+                          {accessType === 'allow_only'
+                            ? `Access Restricted: Only ${restrictedEmails.length} authorized user email(s) can submit`
+                            : `Access Restricted: ${restrictedEmails.length} user email(s) restricted`}
+                        </span>
+                      </div>
+                    )}
+                    {singleSubmissionOnly && (
+                      <div className="preview-access-badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent-primary)', borderColor: 'var(--accent-border)' }}>
+                        <Icon name="check" size={14} />
+                        <span>Single Submission Only: 1 response per user limit active</span>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -637,24 +583,42 @@ export function FormBuilder({
         {/* RIGHT SIDEBAR: FIELD PROPERTIES INSPECTOR */}
         {!isPreview && selectedField && (
           <aside className="sidebar-properties">
-            <div className="sidebar-header">
-              <h3>Field Settings</h3>
-              <p>Configure label and validation rules.</p>
+            <div className="properties-header">
+              <div>
+                <h3>
+                  <Icon name="settings" size={16} /> Field Settings
+                </h3>
+                <p>Configure question details and validation.</p>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setSelectedFieldId(null)}
+                title="Close settings"
+                style={{ width: '28px', height: '28px' }}
+              >
+                <Icon name="x" size={15} />
+              </button>
             </div>
 
             <div className="properties-form">
-              <label>
-                Field Label
+              {/* 1. Field Label */}
+              <div className="property-group">
+                <label className="property-label">Field Label</label>
                 <input
                   type="text"
+                  className="property-input"
                   value={selectedField.label}
                   onChange={(e) => updateSelectedField({ label: e.target.value })}
+                  placeholder="e.g. Full Name"
                 />
-              </label>
+              </div>
 
-              <label>
-                Input Type
+              {/* 2. Input Type */}
+              <div className="property-group">
+                <label className="property-label">Input Type</label>
                 <select
+                  className="property-select"
                   value={selectedField.fieldType}
                   onChange={(e) =>
                     updateSelectedField({ fieldType: e.target.value as FieldType })
@@ -666,10 +630,15 @@ export function FormBuilder({
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <div className="toggle-property">
-                <label className="checkbox-label">
+              {/* 3. Required Field Toggle Card */}
+              <div className="property-toggle-card">
+                <div>
+                  <span className="toggle-card-title">Required Field</span>
+                  <span className="toggle-card-desc">Must be answered before submit</span>
+                </div>
+                <div className="toggle-switch-wrapper">
                   <input
                     type="checkbox"
                     checked={selectedField.isRequired}
@@ -677,123 +646,364 @@ export function FormBuilder({
                       updateSelectedField({ isRequired: e.target.checked })
                     }
                   />
-                  <span>Required Field</span>
-                </label>
+                  <span className="toggle-slider"></span>
+                </div>
               </div>
 
+              {/* 4. Placeholder Text */}
               {['text', 'textarea', 'password', 'email', 'number', 'tel', 'url', 'search'].includes(
                 selectedField.fieldType
               ) && (
-                  <label>
-                    Placeholder Text
-                    <input
-                      type="text"
-                      value={selectedField.placeholder || ''}
-                      onChange={(e) => updateSelectedField({ placeholder: e.target.value })}
-                    />
-                  </label>
-                )}
+                <div className="property-group">
+                  <label className="property-label">Placeholder Text</label>
+                  <input
+                    type="text"
+                    className="property-input"
+                    value={selectedField.placeholder || ''}
+                    onChange={(e) => updateSelectedField({ placeholder: e.target.value })}
+                    placeholder="e.g. Type your answer here..."
+                  />
+                </div>
+              )}
 
-              <label>
-                Help Text / Subtitle
+              {/* 5. Help Text / Subtitle */}
+              <div className="property-group">
+                <label className="property-label">Help Text / Subtitle</label>
                 <input
                   type="text"
+                  className="property-input"
                   value={selectedField.helpText || ''}
                   onChange={(e) => updateSelectedField({ helpText: e.target.value })}
                   placeholder="e.g. Please enter a valid email"
                 />
-              </label>
+              </div>
 
+              {/* 6. Options Editor (Radio, Checkbox, Select) */}
               {['radio', 'checkbox', 'select'].includes(selectedField.fieldType) && (
-                <div className="options-editor">
-                  <label>Choices / Options</label>
-                  {(selectedField.options || []).map((opt, i) => (
-                    <div key={i} className="option-row">
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={(e) => {
-                          const nextOpts = [...(selectedField.options || [])];
-                          nextOpts[i] = e.target.value;
-                          updateSelectedField({ options: nextOpts });
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="icon-btn delete-btn"
-                        onClick={() => {
-                          const nextOpts = (selectedField.options || []).filter(
-                            (_, idx) => idx !== i
-                          );
-                          updateSelectedField({ options: nextOpts });
-                        }}
-                      >
-                        <Icon name="x" size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    className="text-button add-opt-btn"
-                    onClick={() => {
-                      const nextOpts = [
-                        ...(selectedField.options || []),
-                        `Option ${(selectedField.options?.length || 0) + 1}`
-                      ];
-                      updateSelectedField({ options: nextOpts });
-                    }}
-                  >
-                    + Add Choice Option
-                  </button>
+                <div className="property-group">
+                  <label className="property-label">Choices / Options</label>
+                  <div className="options-editor">
+                    {(selectedField.options || []).map((opt, i) => (
+                      <div key={i} className="option-row">
+                        <span className="option-index-badge">{i + 1}</span>
+                        <input
+                          type="text"
+                          className="property-input"
+                          value={opt}
+                          onChange={(e) => {
+                            const nextOpts = [...(selectedField.options || [])];
+                            nextOpts[i] = e.target.value;
+                            updateSelectedField({ options: nextOpts });
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="icon-btn delete-btn"
+                          onClick={() => {
+                            const nextOpts = (selectedField.options || []).filter(
+                              (_, idx) => idx !== i
+                            );
+                            updateSelectedField({ options: nextOpts });
+                          }}
+                          title="Delete option"
+                          style={{ width: '32px', height: '32px', flexShrink: 0 }}
+                        >
+                          <Icon name="x" size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}
+                      onClick={() => {
+                        const nextOpts = [
+                          ...(selectedField.options || []),
+                          `Option ${(selectedField.options?.length || 0) + 1}`
+                        ];
+                        updateSelectedField({ options: nextOpts });
+                      }}
+                    >
+                      <Icon name="plus" size={13} /> Add Choice Option
+                    </button>
+                  </div>
                 </div>
               )}
 
+              {/* 7. Range / Number Min/Max Configuration */}
               {['number', 'range'].includes(selectedField.fieldType) && (
-                <div className="range-config-grid">
-                  <label>
-                    Min
-                    <input
-                      type="number"
-                      value={selectedField.config?.min ?? 0}
-                      onChange={(e) =>
-                        updateSelectedField({
-                          config: { ...selectedField.config, min: Number(e.target.value) }
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Max
-                    <input
-                      type="number"
-                      value={selectedField.config?.max ?? 100}
-                      onChange={(e) =>
-                        updateSelectedField({
-                          config: { ...selectedField.config, max: Number(e.target.value) }
-                        })
-                      }
-                    />
-                  </label>
-                  {selectedField.fieldType === 'range' && (
-                    <label>
-                      Step
+                <div className="property-group">
+                  <label className="property-label">Numeric Bounds</label>
+                  <div className="range-config-grid">
+                    <div className="property-group">
+                      <label className="property-label" style={{ fontSize: '10px' }}>Min</label>
                       <input
                         type="number"
-                        value={selectedField.config?.step ?? 1}
+                        className="property-input"
+                        value={selectedField.config?.min ?? 0}
                         onChange={(e) =>
                           updateSelectedField({
-                            config: { ...selectedField.config, step: Number(e.target.value) }
+                            config: { ...selectedField.config, min: Number(e.target.value) }
                           })
                         }
                       />
-                    </label>
-                  )}
+                    </div>
+                    <div className="property-group">
+                      <label className="property-label" style={{ fontSize: '10px' }}>Max</label>
+                      <input
+                        type="number"
+                        className="property-input"
+                        value={selectedField.config?.max ?? 100}
+                        onChange={(e) =>
+                          updateSelectedField({
+                            config: { ...selectedField.config, max: Number(e.target.value) }
+                          })
+                        }
+                      />
+                    </div>
+                    {selectedField.fieldType === 'range' && (
+                      <div className="property-group">
+                        <label className="property-label" style={{ fontSize: '10px' }}>Step</label>
+                        <input
+                          type="number"
+                          className="property-input"
+                          value={selectedField.config?.step ?? 1}
+                          onChange={(e) =>
+                            updateSelectedField({
+                              config: { ...selectedField.config, step: Number(e.target.value) }
+                            })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
+              {/* 8. Delete Field Action */}
+              <div style={{ marginTop: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: '100%', color: 'var(--destructive)', justifyContent: 'center' }}
+                  onClick={() => removeField(selectedField.id)}
+                >
+                  <Icon name="trash" size={14} /> Delete This Field
+                </button>
+              </div>
             </div>
           </aside>
         )}
       </div>
+
+      {/* SUBMISSION ACCESS RESTRICTIONS MODAL DIALOG */}
+      {showAccessModal && (
+        <div className="modal-backdrop" onClick={() => setShowAccessModal(false)}>
+          <div
+            className="card modal-card detail-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '640px' }}
+          >
+            <div className="detail-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: 'var(--accent-subtle)',
+                    color: 'var(--accent-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Icon name="lock" size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 700 }}>
+                    Submission Access & Security
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                    Control who is authorized to submit and response limits.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowAccessModal(false)}
+                title="Close"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+
+            <div className="detail-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Access Mode Selector */}
+              <div>
+                <label className="property-label" style={{ marginBottom: '8px' }}>Access Permission Rules</label>
+                <div className="access-options-grid">
+                  <label className={`access-radio-card ${accessType === 'allow_all' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="allow_all"
+                      checked={accessType === 'allow_all'}
+                      onChange={() => setAccessType('allow_all')}
+                    />
+                    <div>
+                      <strong>Allow All Users</strong>
+                      <span className="radio-desc">Open access: any valid email ID can submit.</span>
+                    </div>
+                  </label>
+
+                  <label className={`access-radio-card ${accessType === 'allow_only' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="allow_only"
+                      checked={accessType === 'allow_only'}
+                      onChange={() => setAccessType('allow_only')}
+                    />
+                    <div>
+                      <strong>Allow Specific Users (Whitelist)</strong>
+                      <span className="radio-desc">Only specified email IDs are permitted.</span>
+                    </div>
+                  </label>
+
+                  <label className={`access-radio-card ${accessType === 'restrict_specific' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="restrict_specific"
+                      checked={accessType === 'restrict_specific'}
+                      onChange={() => setAccessType('restrict_specific')}
+                    />
+                    <div>
+                      <strong>Restrict Specific Users (Blacklist)</strong>
+                      <span className="radio-desc">Block specific email IDs from submitting.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Whitelist / Blacklist Email Tag Input */}
+              {accessType !== 'allow_all' && (
+                <div className="email-restriction-input-area" style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)' }}>
+                  <label className="input-sublabel" style={{ fontWeight: 600, fontSize: 'var(--font-size-xs)', display: 'block', marginBottom: '8px' }}>
+                    {accessType === 'allow_only'
+                      ? 'Specify email IDs allowed to submit:'
+                      : 'Specify email IDs restricted from submitting:'}
+                  </label>
+
+                  <div className="email-tag-input-row" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <input
+                      type="email"
+                      className="property-input"
+                      placeholder="e.g. user@example.com (Press Enter or Click Add)"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addEmailTag();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-3d-primary btn-sm"
+                      onClick={() => addEmailTag()}
+                      style={{ flexShrink: 0 }}
+                    >
+                      + Add Email
+                    </button>
+                  </div>
+
+                  {restrictedEmails.length > 0 && (
+                    <div className="email-tags-wrapper" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      {restrictedEmails.map((email) => (
+                        <span key={email} className="email-tag-chip">
+                          {email}
+                          <button
+                            type="button"
+                            className="remove-email-btn"
+                            onClick={() => removeEmailTag(email)}
+                            title="Remove email"
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}
+                          >
+                            <Icon name="x" size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="access-info-note" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                    {accessType === 'allow_only'
+                      ? `Only ${restrictedEmails.length} specified email address(es) will be allowed.`
+                      : `${restrictedEmails.length} specified email address(es) will be blocked.`}
+                  </div>
+                </div>
+              )}
+
+              {/* Single Submission Limit Toggle Card */}
+              <div>
+                <label className="property-label" style={{ marginBottom: '8px' }}>Submission Limit</label>
+                <div
+                  className="single-submission-setting-card"
+                  style={{
+                    padding: '14px 16px',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-sm)'
+                  }}
+                >
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      cursor: 'pointer',
+                      margin: 0
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <Icon name="check" size={15} style={{ color: 'var(--accent-primary)' }} />
+                        <span>Limit to 1 response per user</span>
+                      </div>
+                      <span style={{ display: 'block', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                        Each respondent can only fill out and submit this form once. Email address is verified upon submission to prevent duplicate responses.
+                      </span>
+                    </div>
+                    <div className="toggle-switch-wrapper" style={{ flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={singleSubmissionOnly}
+                        onChange={(e) => setSingleSubmissionOnly(e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="detail-modal-footer">
+              <Button3D
+                variant="primary"
+                size="md"
+                onClick={() => setShowAccessModal(false)}
+              >
+                Save & Close
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1040,21 +1250,6 @@ export function RenderFieldInput({
             <span className="current-range-val">Value: {currentVal}</span>
             <span>Max: {max}</span>
           </div>
-        </div>
-      );
-
-    case 'file':
-      return (
-        <div className="file-input-wrapper">
-          <input
-            type="file"
-            disabled={disabled}
-            onChange={(e) => {
-              const fileName = e.target.files?.[0]?.name || '';
-              onChange?.(fileName ? `Uploaded: ${fileName}` : '');
-            }}
-          />
-          {value && <div className="uploaded-file-name" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon name="file" size={14} /> {value}</div>}
         </div>
       );
 

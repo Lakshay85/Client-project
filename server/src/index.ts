@@ -323,11 +323,12 @@ const generateShareId = () => crypto.randomBytes(6).toString('hex');
 // 1. Create a new Form
 app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { title, description, accessType, restrictedEmails, fields } = req.body as {
+    const { title, description, accessType, restrictedEmails, singleSubmissionOnly, fields } = req.body as {
       title?: string;
       description?: string;
       accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
       restrictedEmails?: string[];
+      singleSubmissionOnly?: boolean;
       fields?: Array<{
         label: string;
         fieldType: string;
@@ -365,9 +366,10 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
     const formId = crypto.randomUUID();
     const shareId = generateShareId();
     const userId = req.user!.id;
+    const isSingleSubmission = singleSubmissionOnly !== undefined ? Boolean(singleSubmissionOnly) : true;
 
     await pool.execute(
-      'INSERT INTO forms (id, share_id, user_id, title, description, access_type, restricted_emails) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO forms (id, share_id, user_id, title, description, access_type, restricted_emails, single_submission_only) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         formId,
         shareId,
@@ -375,7 +377,8 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
         title.trim(),
         description?.trim() || null,
         validAccessType,
-        normalizedEmails.length > 0 ? JSON.stringify(normalizedEmails) : null
+        normalizedEmails.length > 0 ? JSON.stringify(normalizedEmails) : null,
+        isSingleSubmission
       ]
     );
 
@@ -402,7 +405,7 @@ app.post('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
 
     return res.status(201).json({
       message: 'Form created successfully',
-      form: { id: formId, shareId, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails, fieldCount: fields.length }
+      form: { id: formId, shareId, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails, singleSubmissionOnly: isSingleSubmission, fieldCount: fields.length }
     });
   } catch (error) { next(error); }
 });
@@ -412,7 +415,7 @@ app.get('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT f.id, f.share_id as shareId, f.title, f.description, f.access_type as accessType, f.restricted_emails as restrictedEmails, f.status, f.created_at as createdAt,
+      `SELECT f.id, f.share_id as shareId, f.title, f.description, f.access_type as accessType, f.restricted_emails as restrictedEmails, f.single_submission_only as singleSubmissionOnly, f.status, f.created_at as createdAt,
               COUNT(DISTINCT s.id) as responseCount,
               COUNT(DISTINCT ff.id) as fieldCount
        FROM forms f
@@ -426,6 +429,7 @@ app.get('/api/forms', authenticate, async (req: AuthRequest, res, next) => {
 
     const formattedForms = rows.map(f => ({
       ...f,
+      singleSubmissionOnly: Boolean(f.singleSubmissionOnly),
       restrictedEmails: f.restrictedEmails ? (typeof f.restrictedEmails === 'string' ? JSON.parse(f.restrictedEmails) : f.restrictedEmails) : []
     }));
 
@@ -440,7 +444,7 @@ app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
     const userId = req.user!.id;
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      'SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, status, created_at as createdAt FROM forms WHERE id = ? AND user_id = ?',
+      'SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, single_submission_only as singleSubmissionOnly, status, created_at as createdAt FROM forms WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -462,6 +466,7 @@ app.get('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
     return res.json({
       form: {
         ...form,
+        singleSubmissionOnly: Boolean(form.singleSubmissionOnly),
         restrictedEmails: form.restrictedEmails ? (typeof form.restrictedEmails === 'string' ? JSON.parse(form.restrictedEmails) : form.restrictedEmails) : [],
         fields: fields.map(f => ({
           ...f,
@@ -480,11 +485,12 @@ app.put('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const { title, description, accessType, restrictedEmails, fields } = req.body as {
+    const { title, description, accessType, restrictedEmails, singleSubmissionOnly, fields } = req.body as {
       title?: string;
       description?: string;
       accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
       restrictedEmails?: string[];
+      singleSubmissionOnly?: boolean;
       fields?: Array<{
         id?: string;
         label: string;
@@ -525,13 +531,16 @@ app.put('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
       });
     }
 
+    const isSingleSubmission = Boolean(singleSubmissionOnly);
+
     await pool.execute(
-      'UPDATE forms SET title = ?, description = ?, access_type = ?, restricted_emails = ? WHERE id = ? AND user_id = ?',
+      'UPDATE forms SET title = ?, description = ?, access_type = ?, restricted_emails = ?, single_submission_only = ? WHERE id = ? AND user_id = ?',
       [
         title.trim(),
         description?.trim() || null,
         validAccessType,
         normalizedEmails.length > 0 ? JSON.stringify(normalizedEmails) : null,
+        isSingleSubmission,
         id,
         userId
       ]
@@ -563,7 +572,7 @@ app.put('/api/forms/:id', authenticate, async (req: AuthRequest, res, next) => {
 
     return res.json({
       message: 'Form updated successfully',
-      form: { id, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails }
+      form: { id, title, description, accessType: validAccessType, restrictedEmails: normalizedEmails, singleSubmissionOnly: isSingleSubmission }
     });
   } catch (error) { next(error); }
 });
@@ -640,9 +649,8 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
   try {
     const { shareId } = req.params;
     const [forms] = await pool.query<RowDataPacket[]>(
-      "SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, created_at as createdAt FROM forms WHERE share_id = ? AND status = 'published'",
+      "SELECT id, share_id as shareId, title, description, access_type as accessType, restricted_emails as restrictedEmails, single_submission_only as singleSubmissionOnly, created_at as createdAt FROM forms WHERE share_id = ? AND status = 'published'",
       [shareId]
-
     );
 
     if (forms.length === 0) {
@@ -656,6 +664,7 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
     );
 
     const isRestricted = (form.accessType || 'allow_all') !== 'allow_all';
+    const isSingleSubmission = Boolean(form.singleSubmissionOnly);
 
     return res.json({
       form: {
@@ -664,6 +673,7 @@ app.get('/api/public/forms/:shareId', async (req, res, next) => {
         title: form.title,
         description: form.description,
         accessType: form.accessType || 'allow_all',
+        singleSubmissionOnly: isSingleSubmission,
         isRestricted,
         fields: fields.map(f => ({
           ...f,
@@ -683,7 +693,7 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
     const { answers, submitterEmail } = req.body as { answers?: Record<string, unknown>; submitterEmail?: string };
 
     const [forms] = await pool.query<RowDataPacket[]>(
-      "SELECT id, title, access_type as accessType, restricted_emails as restrictedEmails FROM forms WHERE share_id = ? AND status = 'published'",
+      "SELECT id, title, access_type as accessType, restricted_emails as restrictedEmails, single_submission_only as singleSubmissionOnly FROM forms WHERE share_id = ? AND status = 'published'",
       [shareId]
     );
 
@@ -693,6 +703,7 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
 
     const form = forms[0];
     const formId = form.id;
+    const isSingleSubmission = Boolean(form.singleSubmissionOnly);
 
     // Validate submitter email
     let emailToUse = typeof submitterEmail === 'string' ? submitterEmail.trim().toLowerCase() : '';
@@ -714,6 +725,26 @@ app.post('/api/public/forms/:shareId/submit', submitRateLimiter, async (req, res
           emailToUse = val.trim().toLowerCase();
           break;
         }
+      }
+    }
+
+    // Single Submission Only Enforcement
+    if (isSingleSubmission) {
+      if (!validEmail(emailToUse)) {
+        return res.status(400).json({
+          message: 'Please enter a valid email address. This form is configured to allow only 1 submission per user.'
+        });
+      }
+
+      const [priorSubmissions] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM form_submissions WHERE form_id = ? AND LOWER(submitter_email) = ? LIMIT 1',
+        [formId, emailToUse]
+      );
+
+      if (priorSubmissions.length > 0) {
+        return res.status(403).json({
+          message: `You have already submitted a response to this form (${emailToUse}). This form allows only 1 submission per user.`
+        });
       }
     }
 

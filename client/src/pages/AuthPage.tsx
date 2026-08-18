@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../Icons';
 import { BrandLogo3D } from '../components/BrandLogo3D';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -46,16 +47,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   return (
     <main className="auth-page">
-      <nav className="top-nav auth-nav">
-        <BrandLogo3D onClick={() => navigate('/')} logoSize={44} fontSize="22px" />
+      <nav className="auth-nav">
+        <BrandLogo3D onClick={() => navigate('/')} logoSize={36} fontSize="18px" />
 
-        <button
-          className="text-button back-home-btn"
-          onClick={() => navigate('/')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          <Icon name="arrow-left" size={16} /> Back home
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ThemeToggle size="sm" />
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => navigate('/')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Icon name="arrow-left" size={14} /> Back home
+          </button>
+        </div>
       </nav>
 
       <div className="auth-container">

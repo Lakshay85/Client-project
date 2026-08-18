@@ -3,6 +3,7 @@ import { Icon } from '../Icons';
 import { Button3D } from './Button3D';
 import { TiltCard } from './TiltCard';
 import { BrandLogo3D } from './BrandLogo3D';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LandingPage3DProps {
   onLogin: () => void;
@@ -121,8 +122,9 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
         </div>
 
         {/* Right CTA Actions */}
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-          <button onClick={onLogin} style={{ background: 'transparent', border: 'none', color: '#e2e8f0', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <ThemeToggle size="sm" />
+          <button onClick={onLogin} style={{ background: 'transparent', border: 'none', color: '#e2e8f0', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}>
             Log in
           </button>
           <Button3D variant="primary" size="sm" onClick={onSignup} style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 18px rgba(6, 182, 212, 0.45)', color: '#ffffff', border: '1px solid rgba(34, 211, 238, 0.4)' }}>

@@ -59,6 +59,7 @@ export async function initializeDatabase(): Promise<void> {
       description TEXT NULL,
       access_type ENUM('allow_all', 'allow_only', 'restrict_specific') NOT NULL DEFAULT 'allow_all',
       restricted_emails LONGTEXT NULL,
+      single_submission_only BOOLEAN NOT NULL DEFAULT FALSE,
       status ENUM('published', 'draft') NOT NULL DEFAULT 'published',
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -116,6 +117,9 @@ export async function initializeDatabase(): Promise<void> {
   } catch (e) {}
   try {
     await rootConnection.query(`ALTER TABLE forms ADD COLUMN restricted_emails LONGTEXT NULL`);
+  } catch (e) {}
+  try {
+    await rootConnection.query(`ALTER TABLE forms ADD COLUMN single_submission_only BOOLEAN NOT NULL DEFAULT FALSE`);
   } catch (e) {}
   try {
     await rootConnection.query(`ALTER TABLE form_submissions ADD COLUMN submitter_email VARCHAR(255) NULL`);

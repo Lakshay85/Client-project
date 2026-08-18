@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icons';
 import { FormField, FormSubmission } from './types';
-import { TiltCard } from './components/TiltCard';
 import { Button3D } from './components/Button3D';
 
 interface FormResponsesProps {
@@ -132,8 +131,8 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   if (loading) {
     return (
       <div className="responses-container">
-        <div className="card loading-card">
-          <div className="spinner"></div>
+        <div className="card loading-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div className="spinner" />
           <p>Loading form responses...</p>
         </div>
       </div>
@@ -143,22 +142,26 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   return (
     <div className="responses-container">
       {/* Header Toolbar */}
-      <header className="responses-header" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', padding: '28px 32px', marginBottom: '28px', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Button3D variant="ghost" size="sm" icon={<Icon name="arrow-left" size={15} />} onClick={onBack}>
-            Back
-          </Button3D>
+      <header className="dashboard-hero" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={onBack}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Icon name="arrow-left" size={14} /> Back
+          </button>
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px', color: '#ffffff' }}>{formTitle}</h1>
-            <div className="responses-meta-subtitle" style={{ fontSize: '13px', color: 'var(--slate-500)', fontWeight: 600 }}>
+            <h1 style={{ fontSize: 'var(--font-size-xl)', marginBottom: '4px' }}>{formTitle}</h1>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
               <span>{submissions.length} Total Submissions</span>
               {submissions.length > 0 && (
                 <span>
                   {' '}• Latest:{' '}
                   {formatISTDate(submissions[0].submittedAt, {
-                    month: 'numeric',
+                    month: 'short',
                     day: 'numeric',
-                    year: '2-digit',
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true
@@ -169,49 +172,48 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           </div>
         </div>
 
-        <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="view-switch" style={{ display: 'flex', gap: '4px', background: 'rgba(15, 23, 42, 0.7)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <Button3D
-              variant={viewMode === 'table' ? 'primary' : 'ghost'}
-              size="sm"
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="mode-toggle">
+            <button
+              type="button"
+              className={`toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
             >
               Table View
-            </Button3D>
-            <Button3D
-              variant={viewMode === 'cards' ? 'primary' : 'ghost'}
-              size="sm"
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
               onClick={() => setViewMode('cards')}
             >
               Individual
-            </Button3D>
+            </button>
           </div>
 
           <Button3D
             variant="primary"
             size="md"
-            icon={<Icon name="download" size={15} />}
+            icon={<Icon name="download" size={14} />}
             onClick={exportCSV}
             disabled={submissions.length === 0}
-            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
           >
             Export CSV
           </Button3D>
         </div>
       </header>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="auth-error-alert" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {submissions.length === 0 ? (
-        <TiltCard maxRotateX={6} maxRotateY={6}>
-          <div className="empty-responses-card" style={{ padding: '48px', textAlign: 'center', color: '#ffffff' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Icon name="email" size={32} />
-            </div>
-            <h2 style={{ color: '#ffffff', fontSize: '24px', fontWeight: 800, margin: '0 0 8px' }}>No Submissions Yet</h2>
-            <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>Share your public form link with users to start receiving responses.</p>
+        <div className="card empty-forms-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <div className="empty-icon-box" style={{ margin: '0 auto 16px' }}>
+            <Icon name="email" size={28} />
           </div>
-        </TiltCard>
+          <h2 style={{ fontSize: 'var(--font-size-lg)', marginBottom: '8px' }}>No Submissions Yet</h2>
+          <p style={{ maxWidth: '400px', margin: '0 auto' }}>
+            Share your public form link with users to start receiving responses.
+          </p>
+        </div>
       ) : viewMode === 'table' ? (
         <div className="card table-card">
           <div className="table-responsive">
@@ -238,16 +240,15 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                     <td>{submissions.length - i}</td>
                     <td className="time-cell">
                       {formatISTDate(sub.submittedAt, {
-                        month: 'numeric',
+                        month: 'short',
                         day: 'numeric',
-                        year: '2-digit',
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true
                       })}
                     </td>
-                    <td className="email-cell">
-                      <strong>{sub.submitterEmail || 'N/A'}</strong>
+                    <td>
+                      <strong style={{ color: 'var(--text-primary)' }}>{sub.submitterEmail || 'N/A'}</strong>
                     </td>
                     <td className="ip-cell">{sub.submitterIp || 'N/A'}</td>
                     {fields.map((f) => (
@@ -257,7 +258,9 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
                     ))}
                     <td>
                       <button
-                        className="text-button btn-sm view-detail-btn"
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: 'var(--accent-primary)', fontWeight: 600 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveModalSubmission(sub);
@@ -273,61 +276,74 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           </div>
         </div>
       ) : (
-        <div className="cards-view-shell">
-          <div className="pagination-nav">
+        <div className="cards-view-shell" style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
             <button
-              className="text-button"
+              type="button"
+              className="btn btn-secondary btn-sm"
               disabled={selectedIndex === 0}
               onClick={() => setSelectedIndex((prev) => prev - 1)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <Icon name="arrow-left" size={14} /> Previous Response
+              <Icon name="arrow-left" size={13} /> Previous
             </button>
             <span>
               Response {selectedIndex + 1} of {submissions.length}
             </span>
             <button
-              className="text-button"
+              type="button"
+              className="btn btn-secondary btn-sm"
               disabled={selectedIndex === submissions.length - 1}
               onClick={() => setSelectedIndex((prev) => prev + 1)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              Next Response <Icon name="arrow-right" size={14} />
+              Next <Icon name="arrow-right" size={13} />
             </button>
           </div>
 
           {submissions[selectedIndex] && (
-            <div className="card response-card-detail">
-              <div className="detail-meta">
+            <div className="card" style={{ width: '100%', maxWidth: '680px', padding: '24px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid var(--border-default)',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--text-muted)'
+              }}>
                 <span>
-                  <strong>Submitter Email:</strong>{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>Submitter:</strong>{' '}
                   {submissions[selectedIndex].submitterEmail || 'N/A'}
                 </span>
                 <span>
-                  <strong>Submitted:</strong>{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>Date:</strong>{' '}
                   {formatISTDate(submissions[selectedIndex].submittedAt)}
                 </span>
                 <span>
-                  <strong>Submitter IP:</strong>{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>IP:</strong>{' '}
                   {submissions[selectedIndex].submitterIp || 'N/A'}
                 </span>
               </div>
 
-              <div className="detail-qa-list">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
                 {fields.map((f) => {
                   const val = parseAnswerValue(submissions[selectedIndex].answers[f.id]);
                   return (
-                    <div key={f.id} className="qa-item">
-                      <div className="qa-question">
-                        {f.label} <span className="qa-type">({f.fieldType})</span>
+                    <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                        {f.label} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '11px' }}>({f.fieldType})</span>
                       </div>
-                      <div className="qa-answer">
+                      <div style={{
+                        background: 'var(--bg-subtle)',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 'var(--font-size-sm)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-default)'
+                      }}>
                         {f.fieldType === 'color' && val !== 'No response' ? (
-                          <div className="color-answer-box">
-                            <span
-                              className="color-swatch-lg"
-                              style={{ backgroundColor: val }}
-                            ></span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: val, border: '1px solid var(--border-strong)' }} />
                             <span>{val}</span>
                           </div>
                         ) : (
@@ -355,39 +371,52 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           >
             <div className="detail-modal-header">
               <div>
-                <h2>Submission Details</h2>
-                <div className="modal-subtext">
-                  Submitted by {activeModalSubmission.submitterEmail || 'N/A'} on {formatISTDate(activeModalSubmission.submittedAt)}
+                <h2 style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>Submission Details</h2>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Submitted on {formatISTDate(activeModalSubmission.submittedAt)}
                 </div>
               </div>
               <button
-                className="icon-btn close-modal-btn"
+                type="button"
+                className="icon-btn"
                 onClick={() => setActiveModalSubmission(null)}
               >
-                ✕
+                <Icon name="x" size={18} />
               </button>
             </div>
 
             <div className="detail-modal-body">
-              <div className="modal-ip-badge">
-                Submitter Email: <strong>{activeModalSubmission.submitterEmail || 'N/A'}</strong> | IP: {activeModalSubmission.submitterIp || 'N/A'}
+              <div style={{
+                background: 'var(--bg-subtle)',
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-default)',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--text-secondary)',
+                marginBottom: '16px'
+              }}>
+                Submitter: <strong style={{ color: 'var(--text-primary)' }}>{activeModalSubmission.submitterEmail || 'N/A'}</strong> | IP: {activeModalSubmission.submitterIp || 'N/A'}
               </div>
 
-              <div className="detail-qa-list">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {fields.map((f, index) => {
                   const val = parseAnswerValue(activeModalSubmission.answers[f.id]);
                   return (
-                    <div key={f.id} className="qa-item">
-                      <div className="qa-question">
-                        <span className="q-num">{index + 1}.</span> {f.label}
+                    <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                        <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>{index + 1}.</span> {f.label}
                       </div>
-                      <div className="qa-answer">
+                      <div style={{
+                        background: 'var(--bg-subtle)',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 'var(--font-size-sm)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-default)'
+                      }}>
                         {f.fieldType === 'color' && val !== 'No response' ? (
-                          <div className="color-answer-box">
-                            <span
-                              className="color-swatch-lg"
-                              style={{ backgroundColor: val }}
-                            ></span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: val, border: '1px solid var(--border-strong)' }} />
                             <span>{val}</span>
                           </div>
                         ) : (
@@ -402,7 +431,8 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
 
             <div className="detail-modal-footer">
               <button
-                className="dark-button"
+                type="button"
+                className="btn btn-secondary btn-md"
                 onClick={() => setActiveModalSubmission(null)}
               >
                 Close Details

@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useState } from 'react';
 import { RenderFieldInput } from './FormBuilder';
 import { Icon } from './Icons';
 import { Form } from './types';
-import { TiltCard } from './components/TiltCard';
 import { Button3D } from './components/Button3D';
 import { BrandLogo3D } from './components/BrandLogo3D';
+import { ThemeToggle } from './components/ThemeToggle';
 
 interface PublicFormProps {
   shareId: string;
@@ -16,7 +16,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   const [form, setForm] = useState<Form | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
-  // Submitter identity state - prefilled from logged-in user if available
+  // Submitter identity state
   const [submitterEmail, setSubmitterEmail] = useState(() => {
     const savedUser = localStorage.getItem('formenclave_user') || localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
     if (savedUser) {
@@ -67,8 +67,10 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
     e.preventDefault();
     if (!form || !form.fields) return;
 
-    if (isRestricted && (!submitterEmail.trim() || !/^\S+@\S+\.\S+$/.test(submitterEmail.trim()))) {
-      setError('Please enter a valid email address for access permission verification.');
+    const isSingleSubmission = Boolean(form.singleSubmissionOnly);
+
+    if ((isRestricted || isSingleSubmission) && (!submitterEmail.trim() || !/^\S+@\S+\.\S+$/.test(submitterEmail.trim()))) {
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -109,9 +111,9 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
       const data = (await response.json()) as { message?: string };
       if (!response.ok) {
-        if (response.status === 403 || data.message?.includes('authorized')) {
+        if (response.status === 403 || data.message?.includes('already submitted') || data.message?.includes('authorized') || data.message?.includes('restricted')) {
           setAuthDenied(true);
-          throw new Error('You are not authorized to submit this form.');
+          throw new Error(data.message || 'Access Denied / Submission Limit Reached.');
         }
         throw new Error(data.message || 'Failed to submit response.');
       }
@@ -140,9 +142,11 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   if (loading) {
     return (
       <div className="public-form-shell">
-        <div className="public-card loading-card">
-          <div className="spinner"></div>
-          <p>Loading form...</p>
+        <div className="public-form-container" style={{ paddingTop: '80px' }}>
+          <div className="card loading-card" style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="spinner" />
+            <p>Loading form...</p>
+          </div>
         </div>
       </div>
     );
@@ -151,163 +155,176 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   if (error && !form) {
     return (
       <div className="public-form-shell">
-        <div className="public-card error-card">
-          <h2>Form Unavailable</h2>
-          <p>{error}</p>
+        <div className="public-form-container" style={{ paddingTop: '80px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+            <h2 style={{ fontSize: 'var(--font-size-xl)', marginBottom: '8px' }}>Form Unavailable</h2>
+            <p style={{ marginBottom: '20px' }}>{error}</p>
+            {onHomeClick && (
+              <Button3D variant="primary" size="md" onClick={onHomeClick}>
+                Go to Home Page
+              </Button3D>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isRestricted = Boolean(form?.accessType && form.accessType !== 'allow_all');
+  const isSingleSubmission = Boolean(form?.singleSubmissionOnly);
+
+  if (submitted) {
+    return (
+      <div className="public-form-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+        <div className="card" style={{ padding: '40px', textAlign: 'center', maxWidth: '500px', width: '100%' }}>
+          <div className="empty-icon-box" style={{ background: 'var(--success-subtle)', color: 'var(--success)', margin: '0 auto 20px' }}>
+            <Icon name="check" size={32} />
+          </div>
+          <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: '8px' }}>Response Submitted!</h2>
+          <p style={{ fontSize: 'var(--font-size-base)', marginBottom: '20px' }}>
+            Thank you for submitting your response for <strong style={{ color: 'var(--text-primary)' }}>{form?.title}</strong>.
+          </p>
+
+          {isSingleSubmission ? (
+            <div style={{ background: 'var(--bg-subtle)', padding: '10px 16px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: '24px' }}>
+              This form is configured for 1 submission per respondent. Your response has been recorded.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '12px' }}>
+              <Button3D variant="primary" size="md" onClick={handleSubmitAnother}>
+                Submit Another Response
+              </Button3D>
+            </div>
+          )}
+
           {onHomeClick && (
-            <button className="coral-button" onClick={onHomeClick}>
-              Go to Home Page
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Button3D variant={isSingleSubmission ? 'primary' : 'outline'} size="md" onClick={onHomeClick}>
+                Back to Home
+              </Button3D>
+            </div>
           )}
         </div>
       </div>
     );
   }
 
-  if (submitted) {
-    return (
-      <div className="public-form-shell" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'radial-gradient(ellipse at 50% 20%, #1e293b 0%, #0a0d14 100%)' }}>
-        <TiltCard maxRotateX={8} maxRotateY={8} glowColor="rgba(16, 185, 129, 0.4)">
-          <div className="public-card success-card" style={{ padding: '40px', textAlign: 'center', maxWidth: '500px' }}>
-            <div className="success-icon" style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', margin: '0 auto 20px', boxShadow: '0 0 25px rgba(16, 185, 129, 0.4)' }}>
-              <Icon name="check" size={32} />
-            </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>Response Submitted!</h2>
-            <p style={{ color: '#94a3b8', fontSize: '15px', margin: '0 0 24px', lineHeight: 1.5 }}>
-              Thank you for submitting your response for <strong style={{ color: '#06b6d4' }}>{form?.title}</strong>.
-            </p>
-            <div className="success-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <Button3D variant="primary" size="md" onClick={handleSubmitAnother}>
-                Submit Another Response
-              </Button3D>
-              {onHomeClick && (
-                <Button3D variant="outline" size="md" onClick={onHomeClick}>
-                  Back to Home
-                </Button3D>
-              )}
-            </div>
-          </div>
-        </TiltCard>
-      </div>
-    );
-  }
-
-  const isRestricted = form?.accessType && form.accessType !== 'allow_all';
-  const filledCount = Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== '').length;
-  const totalFields = form?.fields?.length || 1;
-  const progressPercent = Math.min(100, Math.round((filledCount / totalFields) * 100));
-
   return (
-    <div className="public-form-shell" style={{ minHeight: '100vh', padding: '30px 20px 60px', background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0a0d14 100%)', position: 'relative', overflow: 'hidden' }}>
-      <div className="orb-bg" style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', filter: 'blur(50px)' }} />
-
-      <nav className="public-form-nav" style={{ maxWidth: '680px', margin: '0 auto 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-        <BrandLogo3D onClick={onHomeClick} logoSize={72} fontSize="36px" />
+    <div className="public-form-shell">
+      <nav className="public-form-nav" style={{ justifyContent: 'space-between' }}>
+        <BrandLogo3D onClick={onHomeClick} logoSize={38} fontSize="18px" />
+        <ThemeToggle size="sm" />
       </nav>
 
-      <form className="public-form-container" onSubmit={handleSubmit} style={{ maxWidth: '680px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-
-
-        <TiltCard maxRotateX={6} maxRotateY={6} glowColor="rgba(6, 182, 212, 0.3)">
-          <div className="clay-card" style={{ padding: '32px' }}>
-            {/* Header */}
-            <div className="form-header-card" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', borderTop: 'none', background: 'transparent' }}>
-              <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>{form?.title}</h1>
-              {form?.description && (
-                <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0 0 16px', lineHeight: 1.6 }}>{form.description}</p>
+      <form className="public-form-container" onSubmit={handleSubmit}>
+        <div className="card" style={{ padding: '32px' }}>
+          {/* Header */}
+          <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border-default)' }}>
+            <h1 className="public-form-title">{form?.title}</h1>
+            {form?.description && (
+              <p className="public-form-description">{form.description}</p>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', fontWeight: 500, marginTop: '12px' }}>
+              <span>* Required field</span>
+              {isRestricted && (
+                <span className="access-status-badge allow_only">
+                  <Icon name="lock" size={12} /> Restricted Access Form
+                </span>
               )}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
-                <span>* Required field</span>
-                {isRestricted && (
-                  <span style={{ padding: '4px 10px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-                    <Icon name="lock" size={13} /> Restricted Access Form
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Submitter Email Verification Card */}
-            {isRestricted && (
-              <div style={{ marginBottom: '24px', padding: '20px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '6px' }}>
-                  Security Verification: Your Email Address <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="e.g. name@domain.com"
-                  value={submitterEmail}
-                  onChange={(e) => setSubmitterEmail(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#ffffff', fontSize: '14px', outline: 'none' }}
-                />
-                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
-                  Only authorized email addresses whitelisted by the form creator can submit.
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className={`public-alert ${authDenied ? 'alert-danger-prominent' : 'error'}`} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#f87171', marginBottom: '24px' }}>
-                {authDenied ? (
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ color: '#f87171' }}><Icon name="block" size={24} /></div>
-                    <div>
-                      <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>
-                        Access Denied
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
-                        The email ID (<strong>{submitterEmail || 'provided'}</strong>) does not have permission to submit this form.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  error
-                )}
-              </div>
-            )}
-
-            {/* Dynamic Input Fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {form?.fields?.map((field) => (
-                <div key={field.id} className="field-card" style={{ padding: '20px', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
-                    {field.label}
-                    {field.isRequired && <span style={{ color: '#ef4444' }}> *</span>}
-                  </label>
-
-                  {field.helpText && (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>{field.helpText}</div>
-                  )}
-
-                  <div className="field-input-box" style={{ marginTop: '8px' }}>
-                    <RenderFieldInput
-                      field={field}
-                      value={answers[field.id]}
-                      onChange={(val) => handleFieldChange(field.id, val)}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Form Action Buttons */}
-            <div className="public-form-footer" style={{ display: 'flex', gap: '12px', marginTop: '32px', justifyContent: 'flex-end' }}>
-              <Button3D variant="ghost" size="md" onClick={handleReset} disabled={submitting}>
-                Clear Form
-              </Button3D>
-              <Button3D
-                variant="primary"
-                size="md"
-                icon={<Icon name="zap" size={15} />}
-                loading={submitting}
-                type="submit"
-                style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 100%)', boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)' }}
-              >
-                Submit Response
-              </Button3D>
+              {isSingleSubmission && (
+                <span className="access-status-badge allow_only" style={{ background: 'var(--accent-subtle)', color: 'var(--accent-primary)', borderColor: 'var(--accent-border)' }}>
+                  <Icon name="check" size={12} /> Limit 1 Response
+                </span>
+              )}
             </div>
           </div>
-        </TiltCard>
+
+          {/* Submitter Email Verification Card */}
+          {(isRestricted || isSingleSubmission) && (
+            <div style={{
+              marginBottom: '24px',
+              padding: '16px 20px',
+              background: 'var(--bg-subtle)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)'
+            }}>
+              <label style={{ display: 'block', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Your Email Address <span style={{ color: 'var(--destructive)' }}>*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="e.g. name@domain.com"
+                value={submitterEmail}
+                onChange={(e) => setSubmitterEmail(e.target.value)}
+                required
+              />
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '6px' }}>
+                {isSingleSubmission
+                  ? 'This form is limited to 1 response per respondent. Your email will be verified to prevent duplicate submissions.'
+                  : 'Only authorized email addresses whitelisted by the form creator can submit.'}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className={`auth-error-alert ${authDenied ? 'alert-danger-prominent' : ''}`} style={{ marginBottom: '24px' }}>
+              {authDenied ? (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <Icon name="block" size={20} />
+                  <div>
+                    <h4 style={{ margin: '0 0 2px', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+                      Submission Not Allowed
+                    </h4>
+                    <p style={{ margin: 0, fontSize: 'var(--font-size-xs)' }}>
+                      {error}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                error
+              )}
+            </div>
+          )}
+
+          {/* Dynamic Input Fields */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {form?.fields?.map((field) => (
+              <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="field-label" style={{ fontWeight: 600, fontSize: 'var(--font-size-base)', color: 'var(--text-primary)' }}>
+                  {field.label}
+                  {field.isRequired && <span style={{ color: 'var(--destructive)' }}> *</span>}
+                </label>
+
+                {field.helpText && (
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{field.helpText}</div>
+                )}
+
+                <div className="field-input-box">
+                  <RenderFieldInput
+                    field={field}
+                    value={answers[field.id]}
+                    onChange={(val) => handleFieldChange(field.id, val)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Form Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '32px', justifyContent: 'flex-end' }}>
+            <Button3D variant="ghost" size="md" onClick={handleReset} disabled={submitting}>
+              Clear Form
+            </Button3D>
+            <Button3D
+              variant="primary"
+              size="md"
+              loading={submitting}
+              type="submit"
+            >
+              Submit Response
+            </Button3D>
+          </div>
+        </div>
       </form>
     </div>
   );

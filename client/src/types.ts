@@ -14,7 +14,6 @@ export type FieldType =
   | 'time'
   | 'datetime-local'
   | 'color'
-  | 'file'
   | 'range'
   | 'search';
 
@@ -49,6 +48,7 @@ export interface Form {
   status: 'published' | 'draft';
   accessType?: AccessType;
   restrictedEmails?: string[];
+  singleSubmissionOnly?: boolean;
   isRestricted?: boolean;
   createdAt: string;
   fields?: FormField[];

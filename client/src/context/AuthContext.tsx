@@ -9,7 +9,15 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+// Environment & Backend API URL resolution
+// Toggle between 'development' and 'production' via VITE_APP_ENV or set VITE_API_URL directly
+const appEnv = (import.meta.env.VITE_APP_ENV || 'development').toLowerCase();
+const devApiUrl = import.meta.env.VITE_API_URL_DEV || 'http://localhost:4000';
+const prodApiUrl = import.meta.env.VITE_API_URL_PROD || 'https://form-enclave-qg7w.onrender.com';
+
+const apiUrl = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : (appEnv === 'production' ? prodApiUrl : devApiUrl);
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

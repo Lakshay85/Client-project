@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { DEFAULT_FORM_TEMPLATES, DefaultFormTemplate } from './defaultFormsData';
 import { FormField } from './types';
 import { Icon } from './Icons';
-import { TiltCard } from './components/TiltCard';
-import { Button3D } from './components/Button3D';
 import { TemplateCard } from './components/TemplateCard';
 
 interface DefaultFormsProps {
@@ -99,42 +97,11 @@ function RenderPreviewFieldInput({
         </label>
       );
 
-    case 'color':
-      return (
-        <div className="color-picker-wrapper">
-          <input
-            type="color"
-            value={value || '#0d9488'}
-            onChange={(e) => onChange(e.target.value)}
-          />
-          <span className="color-val">{value || '#0d9488'}</span>
-        </div>
-      );
-
-    case 'date':
-      return (
-        <input
-          type="date"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-
-    case 'number':
-      return (
-        <input
-          type="number"
-          placeholder={field.placeholder || '0'}
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-
     default:
       return (
         <input
-          type={field.fieldType === 'email' ? 'email' : field.fieldType === 'tel' ? 'tel' : 'text'}
-          placeholder={field.placeholder || 'Type here...'}
+          type={field.fieldType || 'text'}
+          placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -142,9 +109,9 @@ function RenderPreviewFieldInput({
   }
 }
 
-export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-
+export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [previewTemplate, setPreviewTemplate] = useState<DefaultFormTemplate | null>(null);
   const [previewAnswers, setPreviewAnswers] = useState<Record<string, any>>({});
   const [previewSubmitted, setPreviewSubmitted] = useState(false);
@@ -155,77 +122,95 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
     setPreviewSubmitted(false);
   };
 
+  const categories = [
+    { id: 'all', label: 'All' },
+    { id: 'Feedback', label: 'Feedback' },
+    { id: 'Events', label: 'Events' },
+    { id: 'HR', label: 'HR & Hiring' },
+    { id: 'Contact', label: 'Contact & Support' },
+    { id: 'Product', label: 'Product & Reviews' },
+    { id: 'Lead Gen', label: 'Lead Capture' },
+    { id: 'Surveys', label: 'Surveys & NPS' }
+  ];
+
   const filteredTemplates = DEFAULT_FORM_TEMPLATES.filter((tpl) => {
-    return categoryFilter === 'all' || tpl.category.toLowerCase() === categoryFilter.toLowerCase();
+    const matchesCategory =
+      categoryFilter === 'all' || tpl.category.toLowerCase() === categoryFilter.toLowerCase();
+    const matchesSearch =
+      !searchQuery.trim() ||
+      tpl.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tpl.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
 
   return (
-    <div className="default-forms-page">
-      {/* Header Toolbar */}
-      <header
-        className="default-forms-header"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
-          borderRadius: '24px',
-          padding: '28px 32px',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          color: '#ffffff',
-          marginBottom: '28px',
-          boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.3)'
-        }}
-      >
-        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <div className="default-forms-page" style={{ width: '100%', margin: 0, padding: 0 }}>
+      {/* 1. Big Centered Header Section (Exact layout as reference image) */}
+      <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 24px', padding: 0 }}>
+        <h1
+          style={{
+            fontSize: '34px',
+            fontWeight: 800,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.03em',
+            margin: '0 0 10px',
+            lineHeight: 1.2
+          }}
+        >
+          Every form you need to work with data in one place
+        </h1>
+        <p
+          style={{
+            fontSize: '15px',
+            color: 'var(--text-secondary)',
+            lineHeight: 1.6,
+            margin: '0 0 24px'
+          }}
+        >
+          Every tool you need to collect data, feedback, and leads, at your fingertips. All are 100% FREE and easy to use! Customize, share, restrict, and analyze responses with just a few clicks.
+        </p>
 
-          <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', letterSpacing: '-0.01em' }}>Pre-Built 3D Form Templates Gallery</h1>
-            <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px' }}>Select any production-grade template to preview interactively, edit questions, or deploy live.</p>
-          </div>
-        </div>
-      </header>
-
-      {/* Filter and Search Bar */}
-      <div
-        className="default-forms-controls card"
-        style={{
-          padding: '20px',
-          borderRadius: '24px',
-          background: 'linear-gradient(145deg, #0e172a 0%, #070c18 100%)',
-          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-          marginBottom: '16px',
-          boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)'
-        }}
-      >
-        <div className="category-tabs" style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-          {['all', 'Feedback', 'Events', 'HR', 'Contact', 'Product'].map((cat) => {
-            const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase();
+        {/* 2. Centered Pill Filter Buttons */}
+        <div className="gallery-pills-row">
+          {categories.map((cat) => {
+            const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase();
             return (
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
+                key={cat.id}
+                type="button"
+                className={`gallery-filter-pill ${isSelected ? 'active' : ''}`}
+                onClick={() => setCategoryFilter(cat.id)}
                 style={{
-                  background: isSelected
-                    ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
-                    : 'rgba(255, 255, 255, 0.08)',
-                  color: isSelected ? '#ffffff' : '#e2e8f0',
-                  border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '20px',
                   padding: '8px 18px',
+                  borderRadius: '9999px',
                   fontSize: '13px',
-                  fontWeight: isSelected ? 800 : 600,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  boxShadow: isSelected ? '0 4px 14px rgba(6, 182, 212, 0.4)' : 'none',
+                  border: isSelected ? '1px solid var(--text-primary)' : '1px solid var(--border-default)',
+                  background: isSelected ? 'var(--text-primary)' : 'var(--bg-surface)',
+                  color: isSelected ? 'var(--bg-app)' : 'var(--text-secondary)',
+                  boxShadow: isSelected ? 'var(--shadow-xs)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
-                {cat === 'all' ? 'All Templates' : cat}
+                {cat.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 3D Templates Grid */}
-      <div className="default-forms-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+      {/* 3. Multi-Column Grid (iLovePDF / Tool cards layout) */}
+      <div
+        className="form-tools-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+          gap: '16px',
+          padding: 0,
+          margin: 0
+        }}
+      >
         {filteredTemplates.map((template) => (
           <TemplateCard
             key={template.id}
@@ -236,53 +221,105 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
         ))}
       </div>
 
-      {/* Complete Interactive Live Form Preview Modal */}
+      {/* Interactive Live Form Preview Modal */}
       {previewTemplate && (
         <div className="modal-backdrop" onClick={() => setPreviewTemplate(null)}>
           <div
-            className="card modal-card template-preview-modal"
+            className="card modal-card detail-modal-card template-preview-modal"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '680px',
+              maxHeight: '85vh',
+              height: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 0,
+              overflow: 'hidden'
+            }}
           >
-            {/* Modal Header */}
-            <div className="modal-top">
-              <div className="modal-icon-badge">
-                <Icon name={previewTemplate.icon} size={28} />
-              </div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div className="live-preview-badge">
-                  <span className="live-dot"></span> Live Interactive Form Preview
+            {/* 1. Fixed Modal Header */}
+            <div
+              className="detail-modal-header"
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-default)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--bg-surface)',
+                flexShrink: 0
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '8px',
+                    background: previewTemplate.iconBg || 'rgba(99, 102, 241, 0.12)',
+                    color: previewTemplate.iconColor || 'var(--accent-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <Icon name={previewTemplate.icon} size={18} />
                 </div>
-                <h2 style={{ margin: '0 0 4px', fontSize: '22px' }}>{previewTemplate.title}</h2>
-                <p className="modal-subtitle">{previewTemplate.description}</p>
+                <div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <span className="live-dot" /> Preview Mode
+                  </div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{previewTemplate.title}</h2>
+                </div>
               </div>
               <button
-                className="clear-search-btn"
-                style={{ cursor: 'pointer' }}
+                type="button"
+                className="icon-btn"
                 onClick={() => setPreviewTemplate(null)}
+                title="Close preview"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px',
+                  color: 'var(--text-muted)'
+                }}
               >
-                <Icon name="x" size={20} />
+                <Icon name="x" size={18} />
               </button>
             </div>
 
-            {/* Live Form Container */}
-            <div className="preview-fields-container">
+            {/* 2. Scrollable Modal Body for Unlimited Fields */}
+            <div
+              className="detail-modal-body"
+              style={{
+                padding: '20px 24px',
+                overflowY: 'auto',
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
               {previewSubmitted ? (
-                <div className="public-card success-card" style={{ margin: '20px 0' }}>
-                  <div className="success-icon">
-                    <Icon name="check" size={32} />
+                <div className="card" style={{ textAlign: 'center', padding: '36px 20px', margin: 'auto 0' }}>
+                  <div className="empty-icon-box" style={{ background: 'var(--success-subtle)', color: 'var(--success)', margin: '0 auto 16px' }}>
+                    <Icon name="check" size={28} />
                   </div>
-                  <h2>Sample Response Submitted!</h2>
-                  <p>
+                  <h3 style={{ fontSize: 'var(--font-size-lg)', marginBottom: '8px' }}>Sample Response Submitted!</h3>
+                  <p style={{ maxWidth: '400px', margin: '0 auto 20px', fontSize: 'var(--font-size-sm)' }}>
                     This is a live preview test. Your respondents will fill out and submit this exact form.
                   </p>
-                  <div className="success-actions" style={{ marginTop: '20px' }}>
-                    <button
-                      className="coral-button"
-                      onClick={() => setPreviewSubmitted(false)}
-                    >
-                      Test Form Again
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-3d-primary btn-md"
+                    onClick={() => setPreviewSubmitted(false)}
+                  >
+                    Test Form Again
+                  </button>
                 </div>
               ) : (
                 <form
@@ -291,25 +328,29 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
                     e.preventDefault();
                     setPreviewSubmitted(true);
                   }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
                 >
-                  <div className="public-card form-header-card" style={{ marginBottom: '16px' }}>
-                    <h1 className="public-form-title">{previewTemplate.title}</h1>
-                    <p className="public-form-description">{previewTemplate.description}</p>
-                    <div className="public-form-meta">
+                  <div>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5 }}>
+                      {previewTemplate.description}
+                    </p>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
                       <span>* Indicates required field</span> • <span>{previewTemplate.fields.length} Input Fields</span>
                     </div>
                   </div>
 
-                  <div className="preview-fields-list">
+                  <div className="preview-fields-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     {previewTemplate.fields.map((field) => (
-                      <div key={field.id} className="public-card field-card">
-                        <label className="field-label">
+                      <div key={field.id} className="card" style={{ padding: '16px', background: 'var(--bg-surface)' }}>
+                        <label className="field-label" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>
                           {field.label}
-                          {field.isRequired && <span className="required-star"> *</span>}
+                          {field.isRequired && <span style={{ color: 'var(--destructive)' }}> *</span>}
                         </label>
 
                         {field.helpText && (
-                          <div className="field-help-text">{field.helpText}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                            {field.helpText}
+                          </div>
                         )}
 
                         <div className="field-input-box">
@@ -325,13 +366,13 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
                     ))}
                   </div>
 
-                  <div className="public-form-footer" style={{ marginTop: '20px' }}>
-                    <button type="submit" className="coral-button submit-btn">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                    <button type="submit" className="btn btn-3d-primary btn-md">
                       Submit Response (Preview Test)
                     </button>
                     <button
                       type="button"
-                      className="text-button clear-btn"
+                      className="btn btn-ghost btn-sm"
                       onClick={() => setPreviewAnswers({})}
                     >
                       Clear Answers
@@ -341,23 +382,37 @@ export function DefaultForms({ onBack, onUseTemplate }: DefaultFormsProps) {
               )}
             </div>
 
-            {/* Modal Bottom Actions */}
-            <div className="modal-actions" style={{ marginTop: '16px', flexDirection: 'row', justifyContent: 'flex-end', gap: '12px' }}>
+            {/* 3. Fixed Modal Bottom Footer Actions */}
+            <div
+              className="detail-modal-footer"
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid var(--border-default)',
+                background: 'var(--bg-surface)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                flexShrink: 0
+              }}
+            >
               <button
-                className="text-button"
+                type="button"
+                className="btn btn-ghost btn-md"
                 onClick={() => setPreviewTemplate(null)}
               >
                 Close Preview
               </button>
               <button
-                className="coral-button"
+                type="button"
+                className="btn btn-3d-primary btn-md"
                 onClick={() => {
                   const tpl = previewTemplate;
                   setPreviewTemplate(null);
                   onUseTemplate(tpl);
                 }}
               >
-                <Icon name="plus" size={16} /> Load into Form Builder
+                <Icon name="plus" size={15} /> Load into Form Builder
               </button>
             </div>
           </div>

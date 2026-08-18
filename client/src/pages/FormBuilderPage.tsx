@@ -25,6 +25,7 @@ export const FormBuilderPage: React.FC<FormBuilderPageProps> = ({ onFormCreated 
       fields: FormField[];
       accessType?: 'allow_all' | 'allow_only' | 'restrict_specific';
       restrictedEmails?: string[];
+      singleSubmissionOnly?: boolean;
     };
   } | null;
 
@@ -67,6 +68,12 @@ export const FormBuilderPage: React.FC<FormBuilderPageProps> = ({ onFormCreated 
   const initialFields = editingForm?.fields || templateState?.template?.fields;
   const initialAccessType = editingForm?.accessType || templateState?.template?.accessType || 'allow_all';
   const initialRestrictedEmails = editingForm?.restrictedEmails || templateState?.template?.restrictedEmails || [];
+  const initialSingleSubmissionOnly =
+    editingForm !== null && editingForm !== undefined
+      ? Boolean(editingForm.singleSubmissionOnly)
+      : templateState?.template?.singleSubmissionOnly !== undefined
+        ? Boolean(templateState.template.singleSubmissionOnly)
+        : true;
 
   return (
     <FormBuilder
@@ -83,6 +90,7 @@ export const FormBuilderPage: React.FC<FormBuilderPageProps> = ({ onFormCreated 
       initialFields={initialFields}
       initialAccessType={initialAccessType}
       initialRestrictedEmails={initialRestrictedEmails}
+      initialSingleSubmissionOnly={initialSingleSubmissionOnly}
     />
   );
 };
