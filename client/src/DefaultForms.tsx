@@ -3,110 +3,11 @@ import { DEFAULT_FORM_TEMPLATES, DefaultFormTemplate } from './defaultFormsData'
 import { FormField } from './types';
 import { Icon } from './Icons';
 import { TemplateCard } from './components/TemplateCard';
+import { FieldRenderer } from './components/fields/FieldRenderer';
 
 interface DefaultFormsProps {
   onBack: () => void;
   onUseTemplate: (template: DefaultFormTemplate) => void;
-}
-
-function RenderPreviewFieldInput({
-  field,
-  value,
-  onChange
-}: {
-  field: FormField;
-  value: any;
-  onChange: (val: any) => void;
-}) {
-  switch (field.fieldType) {
-    case 'textarea':
-      return (
-        <textarea
-          rows={3}
-          placeholder={field.placeholder || 'Type your response here...'}
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-
-    case 'select':
-      return (
-        <select value={value || ''} onChange={(e) => onChange(e.target.value)}>
-          <option value="">-- Choose Option --</option>
-          {(field.options || ['Option 1', 'Option 2']).map((opt, i) => (
-            <option key={i} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      );
-
-    case 'radio':
-      return (
-        <div className="radio-group">
-          {(field.options || ['Option 1', 'Option 2']).map((opt, i) => (
-            <label key={i} className="radio-option">
-              <input
-                type="radio"
-                name={`preview-radio-${field.id}`}
-                checked={value === opt}
-                onChange={() => onChange(opt)}
-              />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
-      );
-
-    case 'checkbox':
-      const selected: string[] = Array.isArray(value) ? value : [];
-      return (
-        <div className="checkbox-group">
-          {(field.options || ['Option A', 'Option B']).map((opt, i) => {
-            const isChecked = selected.includes(opt);
-            return (
-              <label key={i} className="checkbox-option">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      onChange([...selected, opt]);
-                    } else {
-                      onChange(selected.filter((v) => v !== opt));
-                    }
-                  }}
-                />
-                <span>{opt}</span>
-              </label>
-            );
-          })}
-        </div>
-      );
-
-    case 'toggle':
-      return (
-        <label className="toggle-switch-wrapper">
-          <input
-            type="checkbox"
-            checked={Boolean(value)}
-            onChange={(e) => onChange(e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          <span className="toggle-label-text">{value ? 'Enabled' : 'Disabled'}</span>
-        </label>
-      );
-
-    default:
-      return (
-        <input
-          type={field.fieldType || 'text'}
-          placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-  }
 }
 
 export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
@@ -354,7 +255,7 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                         )}
 
                         <div className="field-input-box">
-                          <RenderPreviewFieldInput
+                          <FieldRenderer
                             field={field}
                             value={previewAnswers[field.id]}
                             onChange={(val) =>

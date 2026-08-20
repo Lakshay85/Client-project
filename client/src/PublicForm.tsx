@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { RenderFieldInput } from './FormBuilder';
+import { FieldRenderer } from './components/fields/FieldRenderer';
+import { StorageService } from './services/storage.service';
 import { Icon } from './Icons';
 import { Form } from './types';
 import { Button3D } from './components/Button3D';
@@ -18,14 +19,8 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
   // Submitter identity state
   const [submitterEmail, setSubmitterEmail] = useState(() => {
-    const savedUser = localStorage.getItem('formenclave_user') || localStorage.getItem('formguard_user') || localStorage.getItem('ember_user');
-    if (savedUser) {
-      try {
-        const u = JSON.parse(savedUser);
-        if (u.email) return u.email;
-      } catch (e) { }
-    }
-    return '';
+    const user = StorageService.getUser<{ email?: string }>();
+    return user?.email || '';
   });
 
   const [loading, setLoading] = useState(true);
@@ -300,7 +295,7 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
                 )}
 
                 <div className="field-input-box">
-                  <RenderFieldInput
+                  <FieldRenderer
                     field={field}
                     value={answers[field.id]}
                     onChange={(val) => handleFieldChange(field.id, val)}

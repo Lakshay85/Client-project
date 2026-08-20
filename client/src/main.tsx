@@ -20,8 +20,8 @@ import { FormBuilderPage } from './pages/FormBuilderPage';
 import { AuthPage } from './pages/AuthPage';
 import { PublicFormPage } from './pages/PublicFormPage';
 import { LandingPage3D } from './components/LandingPage3D';
-import { TiltCard } from './components/TiltCard';
-import { Button3D } from './components/Button3D';
+import { DeleteConfirmModal } from './components/modals/DeleteConfirmModal';
+import { ShareModal } from './components/modals/ShareModal';
 import { Icon } from './Icons';
 import { Form, User } from './types';
 import './styles.css';
@@ -105,10 +105,6 @@ function AppContent() {
     }
   };
 
-  const confirmDeleteForm = (id: string) => {
-    setDeleteConfirmFormId(id);
-  };
-
   const executeDeleteForm = async () => {
     if (!token || !deleteConfirmFormId) return;
     setDeletingForm(true);
@@ -135,10 +131,6 @@ function AppContent() {
     setTimeout(() => setCopiedToast(false), 3000);
   };
 
-  const handleEditForm = (form: Form) => {
-    navigate(`/builder/${form.id}`);
-  };
-
   const handleFormCreated = (shareId: string) => {
     fetchUserForms();
     if (shareId) {
@@ -157,205 +149,23 @@ function AppContent() {
         </div>
       )}
 
-      {/* 3D Glass Delete Confirmation Modal */}
       {deleteConfirmFormId && (
-        <div
-          className="modal-backdrop"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(10, 13, 20, 0.8)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 999,
-            padding: '20px'
-          }}
-        >
-          <TiltCard
-            maxRotateX={8}
-            maxRotateY={8}
-            glowColor="rgba(239, 68, 68, 0.4)"
-            style={{ width: '100%', maxWidth: '440px', height: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-          >
-            <div
-              className="modal-card"
-              style={{
-                padding: '32px 28px',
-                width: '100%',
-                maxWidth: '440px',
-                textAlign: 'center',
-                background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-                color: '#ffffff'
-              }}
-            >
-              <div
-                className="modal-icon-badge"
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  margin: '0 auto 16px',
-                  boxShadow: '0 0 24px rgba(239, 68, 68, 0.45)'
-                }}
-              >
-                <Icon name="trash" size={28} />
-              </div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>
-                Delete Form?
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '13.5px', margin: '0 0 24px', lineHeight: 1.5 }}>
-                Are you sure you want to delete this form? All form fields and collected responses will be permanently deleted.
-              </p>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <Button3D
-                  variant="ghost"
-                  size="md"
-                  onClick={() => setDeleteConfirmFormId(null)}
-                  disabled={deletingForm}
-                  style={{ flex: 1 }}
-                >
-                  Cancel
-                </Button3D>
-                <Button3D
-                  variant="danger"
-                  size="md"
-                  onClick={executeDeleteForm}
-                  loading={deletingForm}
-                  style={{ flex: 1 }}
-                >
-                  Delete
-                </Button3D>
-              </div>
-            </div>
-          </TiltCard>
-        </div>
+        <DeleteConfirmModal
+          onConfirm={executeDeleteForm}
+          onCancel={() => setDeleteConfirmFormId(null)}
+          deleting={deletingForm}
+        />
       )}
 
-      {/* 3D Glass Share Modal Dialog */}
       {shareModalShareId && (
-        <div
-          className="modal-backdrop"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(10, 13, 20, 0.75)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '20px'
-          }}
-        >
-          <TiltCard
-            maxRotateX={8}
-            maxRotateY={8}
-            glowColor="rgba(79, 70, 229, 0.4)"
-            style={{ width: '100%', maxWidth: '480px', height: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-          >
-            <div
-              className="modal-card"
-              style={{
-                padding: '36px',
-                width: '100%',
-                maxWidth: '480px',
-                textAlign: 'center',
-                background: 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                color: '#ffffff'
-              }}
-            >
-              <div
-                className="modal-icon-badge"
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #10b981, #06b6d4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  margin: '0 auto 20px',
-                  boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
-                }}
-              >
-                <Icon name="check" size={32} />
-              </div>
-              <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>
-                Form Published Successfully!
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 24px' }}>
-                Your form is live and ready to collect responses from users.
-              </p>
-
-              <div
-                className="share-link-box"
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  marginBottom: '24px',
-                  background: 'rgba(15, 23, 42, 0.7)',
-                  padding: '6px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255, 255, 255, 0.12)'
-                }}
-              >
-                <input
-                  type="text"
-                  readOnly
-                  value={`${window.location.origin}/form/${shareModalShareId}`}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    background: 'transparent',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    outline: 'none'
-                  }}
-                />
-                <Button3D variant="primary" size="sm" onClick={() => copyShareLink(shareModalShareId)}>
-                  Copy Link
-                </Button3D>
-              </div>
-
-              <div className="modal-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <a
-                  href={`${window.location.origin}/form/${shareModalShareId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <Button3D variant="secondary" size="md" style={{ width: '100%' }}>
-                    <Icon name="external-link" size={16} /> Open Public Form
-                  </Button3D>
-                </a>
-                <Button3D variant="ghost" size="md" onClick={() => setShareModalShareId(null)}>
-                  Return to Dashboard
-                </Button3D>
-              </div>
-            </div>
-          </TiltCard>
-        </div>
+        <ShareModal
+          shareId={shareModalShareId}
+          onCopyLink={copyShareLink}
+          onClose={() => setShareModalShareId(null)}
+        />
       )}
 
       <Routes>
-        {/* Public Form Route via Query Param or /form/:shareId */}
         <Route
           path="/"
           element={
@@ -370,7 +180,6 @@ function AppContent() {
         />
         <Route path="/form/:shareId" element={<PublicFormPage />} />
 
-        {/* Authentication Routes */}
         <Route
           path="/login"
           element={user ? <Navigate to="/dashboard" replace /> : <AuthPage mode="login" />}
@@ -380,7 +189,6 @@ function AppContent() {
           element={user ? <Navigate to="/dashboard" replace /> : <AuthPage mode="signup" />}
         />
 
-        {/* Protected Dashboard Layout Routes */}
         {user ? (
           <>
             <Route element={<DashboardLayout />}>
@@ -391,8 +199,8 @@ function AppContent() {
                     forms={forms}
                     fetchingForms={fetchingForms}
                     onCopyLink={copyShareLink}
-                    onEditForm={handleEditForm}
-                    onDeleteForm={confirmDeleteForm}
+                    onEditForm={(form: Form) => navigate(`/builder/${form.id}`)}
+                    onDeleteForm={(id: string) => setDeleteConfirmFormId(id)}
                   />
                 }
               />
@@ -405,7 +213,6 @@ function AppContent() {
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
-            {/* Standalone Fullscreen Form Builder Routes */}
             <Route
               path="/builder"
               element={<FormBuilderPage onFormCreated={handleFormCreated} />}
@@ -419,7 +226,6 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
 
-        {/* Catch all fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

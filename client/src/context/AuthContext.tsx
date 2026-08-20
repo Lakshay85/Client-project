@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User } from '../types';
+import { StorageService } from '../services/storage.service';
 
 interface AuthContextType {
   user: User | null;
@@ -22,34 +23,17 @@ const apiUrl = import.meta.env.VITE_API_URL
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem('formenclave_token') ||
-    localStorage.getItem('formguard_token') ||
-    localStorage.getItem('ember_token')
-  );
-
-  const [user, setUser] = useState<User | null>(() => {
-    const saved =
-      localStorage.getItem('formenclave_user') ||
-      localStorage.getItem('formguard_user') ||
-      localStorage.getItem('ember_user');
-    return saved ? (JSON.parse(saved) as User) : null;
-  });
+  const [token, setToken] = useState<string | null>(() => StorageService.getToken());
+  const [user, setUser] = useState<User | null>(() => StorageService.getUser<User>());
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('formenclave_token', newToken);
-    localStorage.setItem('formenclave_user', JSON.stringify(newUser));
+    StorageService.setAuth(newToken, newUser);
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('formenclave_token');
-    localStorage.removeItem('formenclave_user');
-    localStorage.removeItem('formguard_token');
-    localStorage.removeItem('formguard_user');
-    localStorage.removeItem('ember_token');
-    localStorage.removeItem('ember_user');
+    StorageService.clearAuth();
     setToken(null);
     setUser(null);
   };
@@ -69,7 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .then((data) => {
         if (data?.user) {
           setUser(data.user);
-          localStorage.setItem('formenclave_user', JSON.stringify(data.user));
+          StorageService.setAuth(token, data.user);
         }
       })
       .catch(() => {
