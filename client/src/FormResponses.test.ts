@@ -22,8 +22,36 @@ describe('FormResponses CSV Export', () => {
     ];
 
     const csvContent = exportCSVContent('Test Form', fields, submissions);
+    expect(csvContent).toContain('Approval Status');
+    expect(csvContent).toContain('PENDING');
     expect(csvContent).toContain('"#ff0000"');
     expect(csvContent).toContain('"Line 1, ""quoted text"" & 100%"');
     expect(csvContent).toContain('"user#test@example.com"');
+  });
+
+  test('exports approved and rejected statuses properly in CSV', () => {
+    const fields: FormField[] = [
+      { id: 'f1', label: 'Name', fieldType: 'text', isRequired: true, sortOrder: 0 }
+    ];
+    const submissions = [
+      {
+        id: 'sub-1',
+        submittedAt: '2026-08-10T12:00:00Z',
+        submitterEmail: 'approved@example.com',
+        status: 'approved' as const,
+        answers: { f1: 'Alice' }
+      },
+      {
+        id: 'sub-2',
+        submittedAt: '2026-08-10T13:00:00Z',
+        submitterEmail: 'rejected@example.com',
+        status: 'rejected' as const,
+        answers: { f1: 'Bob' }
+      }
+    ];
+
+    const csvContent = exportCSVContent('Job Applications', fields, submissions);
+    expect(csvContent).toContain('APPROVED');
+    expect(csvContent).toContain('REJECTED');
   });
 });

@@ -115,6 +115,7 @@ export class SubmissionService {
       submittedAt: s.submittedAt,
       submitterIp: s.submitterIp,
       submitterEmail: s.submitterEmail,
+      status: s.status || 'pending',
       answers: answersMap[s.id] || {},
     }));
 
@@ -122,6 +123,35 @@ export class SubmissionService {
       formTitle: form.title,
       fields,
       submissions: formattedSubmissions,
+    };
+  }
+
+  /** Update a submission status (approve/reject/pending) */
+  async updateSubmissionStatus(
+    formId: string,
+    submissionId: string,
+    userId: string,
+    status: unknown
+  ): Promise<{ submissionId: string; status: 'pending' | 'approved' | 'rejected' }> {
+    if (status !== 'pending' && status !== 'approved' && status !== 'rejected') {
+      throw new ValidationError("Invalid status. Must be 'pending', 'approved', or 'rejected'.");
+    }
+
+    const form = await formRepository.findByIdAndUserId(formId, userId);
+    if (!form) {
+      throw new NotFoundError('Form not found or you do not have permission to modify its responses.');
+    }
+
+    const submission = await submissionRepository.findByIdAndFormId(submissionId, formId);
+    if (!submission) {
+      throw new NotFoundError('Submission not found for this form.');
+    }
+
+    await submissionRepository.updateStatus(submissionId, status);
+
+    return {
+      submissionId,
+      status,
     };
   }
 

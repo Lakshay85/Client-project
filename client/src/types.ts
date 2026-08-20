@@ -53,14 +53,20 @@ export interface Form {
   createdAt: string;
   fields?: FormField[];
   responseCount?: number;
+  approvedCount?: number;
+  rejectedCount?: number;
+  pendingCount?: number;
   fieldCount?: number;
 }
+
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface FormSubmission {
   id: string;
   submittedAt: string;
   submitterIp?: string;
   submitterEmail?: string;
+  status: SubmissionStatus;
   answers: Record<string, string>;
 }
 

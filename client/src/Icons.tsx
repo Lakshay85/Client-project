@@ -409,6 +409,54 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       );
+    case 'check-circle':
+      return (
+        <svg {...props}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      );
+    case 'x-circle':
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      );
+    case 'clock':
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      );
+    case 'filter':
+      return (
+        <svg {...props}>
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+      );
+    case 'alert-circle':
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      );
+    case 'thumbs-up':
+      return (
+        <svg {...props}>
+          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+        </svg>
+      );
+    case 'thumbs-down':
+      return (
+        <svg {...props}>
+          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+        </svg>
+      );
     default:
       return (
         <svg {...props}>

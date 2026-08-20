@@ -96,6 +96,9 @@ export class FormRepository {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT f.id, f.share_id as shareId, f.title, f.description, f.access_type as accessType, f.restricted_emails as restrictedEmails, f.single_submission_only as singleSubmissionOnly, f.status, f.created_at as createdAt,
               COUNT(DISTINCT s.id) as responseCount,
+              COUNT(DISTINCT CASE WHEN s.status = 'approved' THEN s.id END) as approvedCount,
+              COUNT(DISTINCT CASE WHEN s.status = 'rejected' THEN s.id END) as rejectedCount,
+              COUNT(DISTINCT CASE WHEN s.status = 'pending' THEN s.id END) as pendingCount,
               COUNT(DISTINCT ff.id) as fieldCount
        FROM forms f
        LEFT JOIN form_submissions s ON s.form_id = f.id

@@ -1,3 +1,5 @@
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
 /** Inbound submission request body. */
 export interface SubmissionRequest {
   answers?: Record<string, unknown>;
@@ -10,5 +12,7 @@ export interface FormattedSubmission {
   submittedAt: string;
   submitterIp: string | null;
   submitterEmail: string | null;
+  status: SubmissionStatus;
   answers: Record<string, string>;
 }
+

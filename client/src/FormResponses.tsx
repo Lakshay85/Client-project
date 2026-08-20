@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icons';
-import { FormField, FormSubmission } from './types';
+import { FormField, FormSubmission, SubmissionStatus } from './types';
 import { Button3D } from './components/Button3D';
 
 interface FormResponsesProps {
@@ -40,6 +40,7 @@ export function exportCSVContent(
   const headers = [
     'Submission ID',
     'Submitted At',
+    'Approval Status',
     'Submitter Email',
     'Submitter IP',
     ...fields.map((f) => `"${f.label.replace(/"/g, '""')}"`)
@@ -52,6 +53,7 @@ export function exportCSVContent(
     return [
       sub.id,
       formatISTDate(sub.submittedAt),
+      (sub.status || 'pending').toUpperCase(),
       `"${String(sub.submitterEmail || 'N/A').replace(/"/g, '""')}"`,
       sub.submitterIp || 'N/A',
       ...answers
@@ -66,9 +68,13 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [statusActionMessage, setStatusActionMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeModalSubmission, setActiveModalSubmission] = useState<FormSubmission | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | SubmissionStatus>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchResponses();
@@ -99,9 +105,60 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
     }
   };
 
+  const handleUpdateStatus = async (
+    submissionId: string,
+    newStatus: SubmissionStatus,
+    e?: React.MouseEvent
+  ) => {
+    if (e) e.stopPropagation();
+    if (updatingId) return;
+
+    setUpdatingId(submissionId);
+    setError('');
+
+    // Optimistic UI update
+    const previousSubmissions = [...submissions];
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === submissionId ? { ...s, status: newStatus } : s))
+    );
+    if (activeModalSubmission && activeModalSubmission.id === submissionId) {
+      setActiveModalSubmission({ ...activeModalSubmission, status: newStatus });
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/forms/${formId}/responses/${submissionId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update response status.');
+      }
+
+      const statusLabel = newStatus === 'approved' ? 'Approved' : newStatus === 'rejected' ? 'Rejected' : 'marked as Pending';
+      setStatusActionMessage(`Response ${statusLabel} successfully`);
+      setTimeout(() => setStatusActionMessage(null), 3000);
+    } catch (err) {
+      // Revert optimistic update on error
+      setSubmissions(previousSubmissions);
+      if (activeModalSubmission && activeModalSubmission.id === submissionId) {
+        const orig = previousSubmissions.find((s) => s.id === submissionId);
+        if (orig) setActiveModalSubmission(orig);
+      }
+      setError(err instanceof Error ? err.message : 'Failed to update status.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const exportCSV = () => {
     if (submissions.length === 0) return;
-    const content = exportCSVContent(formTitle, fields, submissions);
+    const content = exportCSVContent(formTitle, fields, filteredSubmissions);
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -128,6 +185,50 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
     return rawVal;
   };
 
+  const totalCount = submissions.length;
+  const pendingCount = submissions.filter((s) => (s.status || 'pending') === 'pending').length;
+  const approvedCount = submissions.filter((s) => s.status === 'approved').length;
+  const rejectedCount = submissions.filter((s) => s.status === 'rejected').length;
+
+  const filteredSubmissions = submissions.filter((sub) => {
+    const matchesStatus =
+      filterStatus === 'all' ? true : (sub.status || 'pending') === filterStatus;
+    const matchesSearch =
+      !searchQuery.trim() ||
+      (sub.submitterEmail && sub.submitterEmail.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      sub.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      Object.values(sub.answers).some((val) =>
+        String(val).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    return matchesStatus && matchesSearch;
+  });
+
+  const renderStatusBadge = (status?: SubmissionStatus) => {
+    const s = status || 'pending';
+    if (s === 'approved') {
+      return (
+        <span className="response-status-badge approved">
+          <Icon name="check-circle" size={13} />
+          Approved
+        </span>
+      );
+    }
+    if (s === 'rejected') {
+      return (
+        <span className="response-status-badge rejected">
+          <Icon name="x-circle" size={13} />
+          Rejected
+        </span>
+      );
+    }
+    return (
+      <span className="response-status-badge pending">
+        <Icon name="clock" size={13} />
+        Pending
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="responses-container">
@@ -142,7 +243,7 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
   return (
     <div className="responses-container">
       {/* Header Toolbar */}
-      <header className="dashboard-hero" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <header className="dashboard-hero form-responses-hero" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button
             type="button"
@@ -202,7 +303,117 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
         </div>
       </header>
 
+      {/* KPI Stats Bar: Total, Pending, Approved, Rejected */}
+      {submissions.length > 0 && (
+        <div className="response-kpi-bar">
+          <div
+            className={`response-kpi-chip ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('all')}
+          >
+            <span className="kpi-label">Total Responses</span>
+            <span className="kpi-count">{totalCount}</span>
+          </div>
+
+          <div
+            className={`response-kpi-chip pending-chip ${filterStatus === 'pending' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('pending')}
+          >
+            <div className="kpi-icon-label">
+              <Icon name="clock" size={14} />
+              <span className="kpi-label">Pending</span>
+            </div>
+            <span className="kpi-count">{pendingCount}</span>
+          </div>
+
+          <div
+            className={`response-kpi-chip approved-chip ${filterStatus === 'approved' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('approved')}
+          >
+            <div className="kpi-icon-label">
+              <Icon name="check-circle" size={14} />
+              <span className="kpi-label">Approved</span>
+            </div>
+            <span className="kpi-count">{approvedCount}</span>
+          </div>
+
+          <div
+            className={`response-kpi-chip rejected-chip ${filterStatus === 'rejected' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('rejected')}
+          >
+            <div className="kpi-icon-label">
+              <Icon name="x-circle" size={14} />
+              <span className="kpi-label">Rejected</span>
+            </div>
+            <span className="kpi-count">{rejectedCount}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Action Notification Message */}
+      {statusActionMessage && (
+        <div className="response-status-toast">
+          <Icon name="check-circle" size={16} />
+          <span>{statusActionMessage}</span>
+        </div>
+      )}
+
       {error && <div className="auth-error-alert" style={{ marginBottom: '16px' }}>{error}</div>}
+
+      {/* Submissions Filter & Search Control */}
+      {submissions.length > 0 && (
+        <div className="responses-controls-bar card" style={{ marginTop: '12px' }}>
+          <div className="search-input-wrapper">
+            <Icon name="search" size={16} />
+            <input
+              type="search"
+              placeholder="Filter by email, ID, or response value..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <Icon name="x" size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="status-filter-pills">
+            <button
+              type="button"
+              className={`filter-pill ${filterStatus === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('all')}
+            >
+              All ({totalCount})
+            </button>
+            <button
+              type="button"
+              className={`filter-pill ${filterStatus === 'pending' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('pending')}
+            >
+              Pending ({pendingCount})
+            </button>
+            <button
+              type="button"
+              className={`filter-pill ${filterStatus === 'approved' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('approved')}
+            >
+              Approved ({approvedCount})
+            </button>
+            <button
+              type="button"
+              className={`filter-pill ${filterStatus === 'rejected' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('rejected')}
+            >
+              Rejected ({rejectedCount})
+            </button>
+          </div>
+        </div>
+      )}
 
       {submissions.length === 0 ? (
         <div className="card empty-forms-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
@@ -214,6 +425,23 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
             Share your public form link with users to start receiving responses.
           </p>
         </div>
+      ) : filteredSubmissions.length === 0 ? (
+        <div className="card empty-forms-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            No submissions found matching the current filter or search criteria.
+          </p>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            style={{ marginTop: '12px' }}
+            onClick={() => {
+              setFilterStatus('all');
+              setSearchQuery('');
+            }}
+          >
+            Reset Filters
+          </button>
+        </div>
       ) : viewMode === 'table' ? (
         <div className="card table-card">
           <div className="table-responsive">
@@ -221,56 +449,90 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Status</th>
                   <th>Submitted At</th>
                   <th>Submitter Email</th>
                   <th>IP Address</th>
                   {fields.map((f) => (
                     <th key={f.id}>{f.label}</th>
                   ))}
-                  <th>Actions</th>
+                  <th style={{ textAlign: 'right', minWidth: '180px' }}>Review Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((sub, i) => (
-                  <tr
-                    key={sub.id}
-                    className="table-row-interactive"
-                    onClick={() => setActiveModalSubmission(sub)}
-                  >
-                    <td>{submissions.length - i}</td>
-                    <td className="time-cell">
-                      {formatISTDate(sub.submittedAt, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
-                    </td>
-                    <td>
-                      <strong style={{ color: 'var(--text-primary)' }}>{sub.submitterEmail || 'N/A'}</strong>
-                    </td>
-                    <td className="ip-cell">{sub.submitterIp || 'N/A'}</td>
-                    {fields.map((f) => (
-                      <td key={f.id} className="answer-cell">
-                        {parseAnswerValue(sub.answers[f.id])}
+                {filteredSubmissions.map((sub, i) => {
+                  const currentStatus = sub.status || 'pending';
+                  const isUpdating = updatingId === sub.id;
+
+                  return (
+                    <tr
+                      key={sub.id}
+                      className="table-row-interactive"
+                      onClick={() => setActiveModalSubmission(sub)}
+                    >
+                      <td>{filteredSubmissions.length - i}</td>
+                      <td>{renderStatusBadge(currentStatus)}</td>
+                      <td className="time-cell">
+                        {formatISTDate(sub.submittedAt, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
                       </td>
-                    ))}
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: 'var(--accent-primary)', fontWeight: 600 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveModalSubmission(sub);
-                        }}
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td>
+                        <strong style={{ color: 'var(--text-primary)' }}>{sub.submitterEmail || 'N/A'}</strong>
+                      </td>
+                      <td className="ip-cell">{sub.submitterIp || 'N/A'}</td>
+                      {fields.map((f) => (
+                        <td key={f.id} className="answer-cell">
+                          {parseAnswerValue(sub.answers[f.id])}
+                        </td>
+                      ))}
+                      <td style={{ textAlign: 'right' }}>
+                        <div
+                          className="table-action-btn-group"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className={`status-action-btn approve-btn ${currentStatus === 'approved' ? 'active' : ''}`}
+                            disabled={isUpdating}
+                            title="Approve response"
+                            onClick={(e) => handleUpdateStatus(sub.id, 'approved', e)}
+                          >
+                            <Icon name="check" size={13} />
+                            <span>{currentStatus === 'approved' ? 'Approved' : 'Approve'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`status-action-btn reject-btn ${currentStatus === 'rejected' ? 'active' : ''}`}
+                            disabled={isUpdating}
+                            title="Reject response"
+                            onClick={(e) => handleUpdateStatus(sub.id, 'rejected', e)}
+                          >
+                            <Icon name="x" size={13} />
+                            <span>{currentStatus === 'rejected' ? 'Rejected' : 'Reject'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--accent-primary)', fontWeight: 600, padding: '4px 8px' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveModalSubmission(sub);
+                            }}
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -287,47 +549,86 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               <Icon name="arrow-left" size={13} /> Previous
             </button>
             <span>
-              Response {selectedIndex + 1} of {submissions.length}
+              Response {selectedIndex + 1} of {filteredSubmissions.length}
             </span>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              disabled={selectedIndex === submissions.length - 1}
+              disabled={selectedIndex === filteredSubmissions.length - 1}
               onClick={() => setSelectedIndex((prev) => prev + 1)}
             >
               Next <Icon name="arrow-right" size={13} />
             </button>
           </div>
 
-          {submissions[selectedIndex] && (
+          {filteredSubmissions[selectedIndex] && (
             <div className="card" style={{ width: '100%', maxWidth: '680px', padding: '24px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid var(--border-default)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {renderStatusBadge(filteredSubmissions[selectedIndex].status)}
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                    Submitted {formatISTDate(filteredSubmissions[selectedIndex].submittedAt)}
+                  </span>
+                </div>
+
+                <div className="submission-card-actions" style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${filteredSubmissions[selectedIndex].status === 'approved' ? 'btn-success' : 'btn-outline'}`}
+                    onClick={() => handleUpdateStatus(filteredSubmissions[selectedIndex].id, 'approved')}
+                  >
+                    <Icon name="check-circle" size={14} /> Approve
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${filteredSubmissions[selectedIndex].status === 'rejected' ? 'btn-danger' : 'btn-outline'}`}
+                    onClick={() => handleUpdateStatus(filteredSubmissions[selectedIndex].id, 'rejected')}
+                  >
+                    <Icon name="x-circle" size={14} /> Reject
+                  </button>
+                  {filteredSubmissions[selectedIndex].status !== 'pending' && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      title="Reset status to pending"
+                      onClick={() => handleUpdateStatus(filteredSubmissions[selectedIndex].id, 'pending')}
+                    >
+                      <Icon name="clock" size={14} /> Pending
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: '12px',
-                paddingBottom: '16px',
-                borderBottom: '1px solid var(--border-default)',
+                padding: '12px 0',
                 fontSize: 'var(--font-size-xs)',
                 color: 'var(--text-muted)'
               }}>
                 <span>
                   <strong style={{ color: 'var(--text-primary)' }}>Submitter:</strong>{' '}
-                  {submissions[selectedIndex].submitterEmail || 'N/A'}
-                </span>
-                <span>
-                  <strong style={{ color: 'var(--text-primary)' }}>Date:</strong>{' '}
-                  {formatISTDate(submissions[selectedIndex].submittedAt)}
+                  {filteredSubmissions[selectedIndex].submitterEmail || 'N/A'}
                 </span>
                 <span>
                   <strong style={{ color: 'var(--text-primary)' }}>IP:</strong>{' '}
-                  {submissions[selectedIndex].submitterIp || 'N/A'}
+                  {filteredSubmissions[selectedIndex].submitterIp || 'N/A'}
                 </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
                 {fields.map((f) => {
-                  const val = parseAnswerValue(submissions[selectedIndex].answers[f.id]);
+                  const val = parseAnswerValue(filteredSubmissions[selectedIndex].answers[f.id]);
                   return (
                     <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
@@ -371,8 +672,11 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
           >
             <div className="detail-modal-header">
               <div>
-                <h2 style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>Submission Details</h2>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                  <h2 style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>Submission Details</h2>
+                  {renderStatusBadge(activeModalSubmission.status)}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
                   Submitted on {formatISTDate(activeModalSubmission.submittedAt)}
                 </div>
               </div>
@@ -388,14 +692,23 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
             <div className="detail-modal-body">
               <div style={{
                 background: 'var(--bg-subtle)',
-                padding: '8px 12px',
+                padding: '10px 14px',
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--border-default)',
                 fontSize: 'var(--font-size-xs)',
                 color: 'var(--text-secondary)',
-                marginBottom: '16px'
+                marginBottom: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px'
               }}>
-                Submitter: <strong style={{ color: 'var(--text-primary)' }}>{activeModalSubmission.submitterEmail || 'N/A'}</strong> | IP: {activeModalSubmission.submitterIp || 'N/A'}
+                <div>
+                  Submitter: <strong style={{ color: 'var(--text-primary)' }}>{activeModalSubmission.submitterEmail || 'N/A'}</strong>
+                </div>
+                <div>
+                  IP: <span style={{ color: 'var(--text-primary)' }}>{activeModalSubmission.submitterIp || 'N/A'}</span>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -429,7 +742,47 @@ export function FormResponses({ formId, token, apiUrl, onBack }: FormResponsesPr
               </div>
             </div>
 
-            <div className="detail-modal-footer">
+            <div className="detail-modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${activeModalSubmission.status === 'approved' ? 'btn-success active-choice' : 'btn-outline'}`}
+                  style={{
+                    background: activeModalSubmission.status === 'approved' ? '#10b981' : undefined,
+                    color: activeModalSubmission.status === 'approved' ? '#ffffff' : undefined,
+                    borderColor: '#10b981'
+                  }}
+                  onClick={() => handleUpdateStatus(activeModalSubmission.id, 'approved')}
+                >
+                  <Icon name="check-circle" size={14} />
+                  <span>{activeModalSubmission.status === 'approved' ? 'Approved' : 'Approve Response'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-sm ${activeModalSubmission.status === 'rejected' ? 'btn-danger active-choice' : 'btn-outline'}`}
+                  style={{
+                    background: activeModalSubmission.status === 'rejected' ? '#ef4444' : undefined,
+                    color: activeModalSubmission.status === 'rejected' ? '#ffffff' : undefined,
+                    borderColor: '#ef4444'
+                  }}
+                  onClick={() => handleUpdateStatus(activeModalSubmission.id, 'rejected')}
+                >
+                  <Icon name="x-circle" size={14} />
+                  <span>{activeModalSubmission.status === 'rejected' ? 'Rejected' : 'Reject Response'}</span>
+                </button>
+
+                {activeModalSubmission.status !== 'pending' && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleUpdateStatus(activeModalSubmission.id, 'pending')}
+                  >
+                    <Icon name="clock" size={13} /> Reset to Pending
+                  </button>
+                )}
+              </div>
+
               <button
                 type="button"
                 className="btn btn-secondary btn-md"

@@ -18,20 +18,34 @@ export function ResponsesOverview({
   onCreateNewForm
 }: ResponsesOverviewProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [copiedFormId, setCopiedFormId] = useState<string | null>(null);
 
+  const totalForms = forms.length;
   const totalResponses = forms.reduce((sum, f) => sum + (f.responseCount || 0), 0);
-  const activeFormsCount = forms.filter((f) => f.status === 'published').length;
-  const draftFormsCount = forms.filter((f) => f.status === 'draft').length;
+  const totalApproved = forms.reduce((sum, f) => sum + (f.approvedCount || 0), 0);
+  const totalRejected = forms.reduce((sum, f) => sum + (f.rejectedCount || 0), 0);
+  const totalPending = forms.reduce((sum, f) => sum + (f.pendingCount || 0), 0);
+
+  const pendingFormsCount = forms.filter((f) => (f.pendingCount || 0) > 0).length;
+  const approvedFormsCount = forms.filter((f) => (f.approvedCount || 0) > 0).length;
+  const rejectedFormsCount = forms.filter((f) => (f.rejectedCount || 0) > 0).length;
 
   const filteredForms = forms.filter((f) => {
     const matchesSearch =
       f.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (f.description && f.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus =
-      statusFilter === 'all' ? true : f.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    let matchesApproval = true;
+    if (approvalFilter === 'pending') {
+      matchesApproval = (f.pendingCount || 0) > 0;
+    } else if (approvalFilter === 'approved') {
+      matchesApproval = (f.approvedCount || 0) > 0;
+    } else if (approvalFilter === 'rejected') {
+      matchesApproval = (f.rejectedCount || 0) > 0;
+    }
+
+    return matchesSearch && matchesApproval;
   });
 
   const handleCopyLink = (shareId: string, formId: string, e: React.MouseEvent) => {
@@ -54,7 +68,7 @@ export function ResponsesOverview({
           <div>
             <h1 className="hero-title">Responses & Analytics Hub</h1>
             <p className="hero-subtitle">
-              Inspect submission records, export CSV reports, and monitor respondent engagement in real-time.
+              Inspect submission records, approve or reject responses, export CSV reports, and manage respondents.
             </p>
           </div>
         </div>
@@ -71,50 +85,72 @@ export function ResponsesOverview({
         </div>
       </header>
 
-      {/* Metrics Row */}
-      <div className="responses-metrics-grid">
-        <div className="card metric-card">
-          <div className="metric-card-header">
-            <span className="metric-title">Total Forms</span>
-            <div className="metric-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-              <Icon name="grid" size={16} />
-            </div>
-          </div>
-          <div className="metric-value-row">
-            <span className="metric-value">{forms.length}</span>
-            <span className="metric-badge neutral">Workspace Total</span>
-          </div>
-          <p className="metric-footer-text">Total forms in your workspace</p>
-        </div>
-
+      {/* Metrics Row: Total Submissions, Pending, Approved, Rejected */}
+      <div className="responses-metrics-grid approval-metrics-grid">
         <div className="card metric-card">
           <div className="metric-card-header">
             <span className="metric-title">Total Submissions</span>
-            <div className="metric-icon-wrap" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+            <div className="metric-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6' }}>
               <Icon name="users" size={16} />
             </div>
           </div>
           <div className="metric-value-row">
             <span className="metric-value">{totalResponses}</span>
-            <span className="metric-badge accent">Live Records</span>
+            <span className="metric-badge neutral">{totalForms} Form{totalForms === 1 ? '' : 's'}</span>
           </div>
           <p className="metric-footer-text">Responses collected across all forms</p>
         </div>
 
         <div className="card metric-card">
           <div className="metric-card-header">
-            <span className="metric-title">Active / Published</span>
-            <div className="metric-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-              <Icon name="zap" size={16} />
+            <span className="metric-title">Pending Review</span>
+            <div className="metric-icon-wrap" style={{ background: 'rgba(245, 158, 11, 0.14)', color: '#f59e0b' }}>
+              <Icon name="clock" size={16} />
             </div>
           </div>
           <div className="metric-value-row">
-            <span className="metric-value">{activeFormsCount}</span>
-            <span className="metric-badge success">Live</span>
+            <span className="metric-value" style={{ color: totalPending > 0 ? '#f59e0b' : 'inherit' }}>
+              {totalPending}
+            </span>
+            <span className={`metric-badge ${totalPending > 0 ? 'warning' : 'neutral'}`}>
+              {totalPending > 0 ? 'Awaiting Action' : 'All Clear'}
+            </span>
           </div>
           <p className="metric-footer-text">
-            {activeFormsCount} published, {draftFormsCount} draft(s)
+            {pendingFormsCount} form{pendingFormsCount === 1 ? '' : 's'} with pending responses
           </p>
+        </div>
+
+        <div className="card metric-card">
+          <div className="metric-card-header">
+            <span className="metric-title">Approved Responses</span>
+            <div className="metric-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
+              <Icon name="check-circle" size={16} />
+            </div>
+          </div>
+          <div className="metric-value-row">
+            <span className="metric-value" style={{ color: '#10b981' }}>{totalApproved}</span>
+            <span className="metric-badge success">Approved</span>
+          </div>
+          <p className="metric-footer-text">Accepted respondent submissions</p>
+        </div>
+
+        <div className="card metric-card">
+          <div className="metric-card-header">
+            <span className="metric-title">Rejected Responses</span>
+            <div className="metric-icon-wrap" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
+              <Icon name="x-circle" size={16} />
+            </div>
+          </div>
+          <div className="metric-value-row">
+            <span className="metric-value" style={{ color: totalRejected > 0 ? '#ef4444' : 'inherit' }}>
+              {totalRejected}
+            </span>
+            <span className={`metric-badge ${totalRejected > 0 ? 'danger' : 'neutral'}`}>
+              Rejected
+            </span>
+          </div>
+          <p className="metric-footer-text">Declined respondent submissions</p>
         </div>
       </div>
 
@@ -143,24 +179,31 @@ export function ResponsesOverview({
         <div className="status-filter-pills">
           <button
             type="button"
-            className={`filter-pill ${statusFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('all')}
+            className={`filter-pill ${approvalFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setApprovalFilter('all')}
           >
             All Forms ({forms.length})
           </button>
           <button
             type="button"
-            className={`filter-pill ${statusFilter === 'published' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('published')}
+            className={`filter-pill ${approvalFilter === 'pending' ? 'active' : ''}`}
+            onClick={() => setApprovalFilter('pending')}
           >
-            Published ({activeFormsCount})
+            Needs Review ({pendingFormsCount})
           </button>
           <button
             type="button"
-            className={`filter-pill ${statusFilter === 'draft' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('draft')}
+            className={`filter-pill ${approvalFilter === 'approved' ? 'active' : ''}`}
+            onClick={() => setApprovalFilter('approved')}
           >
-            Drafts ({draftFormsCount})
+            Has Approved ({approvedFormsCount})
+          </button>
+          <button
+            type="button"
+            className={`filter-pill ${approvalFilter === 'rejected' ? 'active' : ''}`}
+            onClick={() => setApprovalFilter('rejected')}
+          >
+            Has Rejected ({rejectedFormsCount})
           </button>
         </div>
       </div>
@@ -178,14 +221,14 @@ export function ResponsesOverview({
               <Icon name="chart" size={28} />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
-              {searchTerm ? 'No forms matching search' : 'No forms available'}
+              {searchTerm || approvalFilter !== 'all' ? 'No forms matching filter' : 'No forms available'}
             </h3>
             <p style={{ maxWidth: '420px', margin: '0 auto 20px', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-              {searchTerm
-                ? `No forms found matching "${searchTerm}". Try another keyword or clear filters.`
+              {searchTerm || approvalFilter !== 'all'
+                ? `No forms found matching your current filter criteria. Try resetting filters or search term.`
                 : 'Create your first form to start collecting responses and analyzing submissions.'}
             </p>
-            {!searchTerm ? (
+            {!searchTerm && approvalFilter === 'all' ? (
               <Button3D
                 variant="primary"
                 size="md"
@@ -200,7 +243,7 @@ export function ResponsesOverview({
                 className="btn btn-outline btn-sm"
                 onClick={() => {
                   setSearchTerm('');
-                  setStatusFilter('all');
+                  setApprovalFilter('all');
                 }}
               >
                 Reset Filters
@@ -211,8 +254,10 @@ export function ResponsesOverview({
           <div className="responses-cards-grid">
             {filteredForms.map((form) => {
               const respCount = form.responseCount || 0;
+              const appCount = form.approvedCount || 0;
+              const rejCount = form.rejectedCount || 0;
+              const pendCount = form.pendingCount || 0;
               const fieldsCount = form.fieldCount || form.fields?.length || 0;
-              const isPublished = form.status === 'published';
 
               return (
                 <article key={form.id} className="card form-response-card">
@@ -221,10 +266,24 @@ export function ResponsesOverview({
                       <div className="form-card-icon-avatar">
                         <Icon name="textarea" size={18} />
                       </div>
-                      <span className={`status-pill-badge ${isPublished ? 'published' : 'draft'}`}>
-                        <span className="pulse-dot" />
-                        {isPublished ? 'Published' : 'Draft'}
-                      </span>
+                      <div className="response-card-quick-status">
+                        {pendCount > 0 && (
+                          <span className="status-pill-badge pending" title={`${pendCount} pending review`}>
+                            <span className="pulse-dot" />
+                            {pendCount} Pending
+                          </span>
+                        )}
+                        {pendCount === 0 && respCount > 0 && (
+                          <span className="status-pill-badge reviewed" title="All submissions reviewed">
+                            Reviewed
+                          </span>
+                        )}
+                        {respCount === 0 && (
+                          <span className="status-pill-badge no-resp">
+                            0 Submissions
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <h3 className="response-card-title" title={form.title}>
@@ -238,17 +297,24 @@ export function ResponsesOverview({
                     <div className="response-card-badges">
                       <span className="meta-chip highlight">
                         <Icon name="users" size={13} />
-                        <strong>{respCount}</strong> {respCount === 1 ? 'Submission' : 'Submissions'}
+                        <strong>{respCount}</strong> {respCount === 1 ? 'Total' : 'Total'}
                       </span>
+                      {appCount > 0 && (
+                        <span className="meta-chip success-chip" title={`${appCount} Approved`}>
+                          <Icon name="check-circle" size={13} />
+                          <strong>{appCount}</strong> Approved
+                        </span>
+                      )}
+                      {rejCount > 0 && (
+                        <span className="meta-chip danger-chip" title={`${rejCount} Rejected`}>
+                          <Icon name="x-circle" size={13} />
+                          <strong>{rejCount}</strong> Rejected
+                        </span>
+                      )}
                       <span className="meta-chip">
                         <Icon name="checkbox" size={13} />
                         {fieldsCount} Fields
                       </span>
-                      {form.singleSubmissionOnly && (
-                        <span className="meta-chip" title="Limit 1 response per user active">
-                          <Icon name="lock" size={13} /> 1/User
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -258,11 +324,11 @@ export function ResponsesOverview({
                       className="btn btn-3d-primary btn-full"
                       onClick={() => onSelectFormResponses(form.id)}
                     >
-                      <span>View Submissions & CSV</span>
+                      <span>Review &amp; Manage Approvals</span>
                       <Icon name="arrow-right" size={14} />
                     </button>
 
-                    {isPublished && form.shareId && (
+                    {form.shareId && (
                       <button
                         type="button"
                         className="btn btn-outline btn-sm copy-link-btn"

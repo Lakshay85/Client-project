@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { DEFAULT_FORM_TEMPLATES, DefaultFormTemplate } from './defaultFormsData';
-import { FormField } from './types';
 import { Icon } from './Icons';
 import { TemplateCard } from './components/TemplateCard';
 import { FieldRenderer } from './components/fields/FieldRenderer';
@@ -46,19 +45,21 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
 
   return (
     <div className="default-forms-page" style={{ width: '100%', margin: 0, padding: 0 }}>
-      {/* 1. Big Centered Header Section (Exact layout as reference image) */}
-      <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 24px', padding: 0 }}>
+      {/* 1. Centered Header Section */}
+      <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 32px', padding: 0 }}>
+
         <h1
           style={{
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: '34px',
-            fontWeight: 800,
+            fontWeight: 700,
             color: 'var(--text-primary)',
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.01em',
             margin: '0 0 10px',
             lineHeight: 1.2
           }}
         >
-          Every form you need to work with data in one place
+          Form Blueprints &amp; <span style={{ color: 'var(--accent-primary)' }}>Templates</span>
         </h1>
         <p
           style={{
@@ -68,11 +69,11 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
             margin: '0 0 24px'
           }}
         >
-          Every tool you need to collect data, feedback, and leads, at your fingertips. All are 100% FREE and easy to use! Customize, share, restrict, and analyze responses with just a few clicks.
+          Select from our curated form blueprints designed with structural precision. Customize fields, configure email gatekeeping, and start collecting telemetry instantly.
         </p>
 
-        {/* 2. Centered Pill Filter Buttons */}
-        <div className="gallery-pills-row">
+        {/* 2. Monospace Pill Filter Buttons */}
+        <div className="gallery-pills-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
           {categories.map((cat) => {
             const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase();
             return (
@@ -82,15 +83,16 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                 className={`gallery-filter-pill ${isSelected ? 'active' : ''}`}
                 onClick={() => setCategoryFilter(cat.id)}
                 style={{
-                  padding: '8px 18px',
-                  borderRadius: '9999px',
-                  fontSize: '13px',
+                  padding: '6px 14px',
+                  borderRadius: 'var(--radius-xs)',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '12px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: isSelected ? '1px solid var(--text-primary)' : '1px solid var(--border-default)',
-                  background: isSelected ? 'var(--text-primary)' : 'var(--bg-surface)',
-                  color: isSelected ? 'var(--bg-app)' : 'var(--text-secondary)',
-                  boxShadow: isSelected ? 'var(--shadow-xs)' : 'none',
+                  border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-default)',
+                  background: isSelected ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                  color: isSelected ? 'var(--accent-fg)' : 'var(--text-secondary)',
+                  boxShadow: isSelected ? '0 2px 8px rgba(14, 140, 163, 0.2)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -101,13 +103,13 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
         </div>
       </div>
 
-      {/* 3. Multi-Column Grid (iLovePDF / Tool cards layout) */}
+      {/* 3. Multi-Column Grid */}
       <div
         className="form-tools-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-          gap: '16px',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: '20px',
           padding: 0,
           margin: 0
         }}
@@ -135,7 +137,10 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
               display: 'flex',
               flexDirection: 'column',
               padding: 0,
-              overflow: 'hidden'
+              overflow: 'hidden',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
+              background: 'var(--bg-surface)'
             }}
           >
             {/* 1. Fixed Modal Header */}
@@ -156,22 +161,23 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                   style={{
                     width: '38px',
                     height: '38px',
-                    borderRadius: '8px',
-                    background: previewTemplate.iconBg || 'rgba(99, 102, 241, 0.12)',
+                    borderRadius: 'var(--radius-xs)',
+                    background: previewTemplate.iconBg || 'var(--accent-subtle)',
                     color: previewTemplate.iconColor || 'var(--accent-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    border: '1px dashed var(--accent-border)'
                   }}
                 >
                   <Icon name={previewTemplate.icon} size={18} />
                 </div>
                 <div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     <span className="live-dot" /> Preview Mode
                   </div>
-                  <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{previewTemplate.title}</h2>
+                  <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>{previewTemplate.title}</h2>
                 </div>
               </div>
               <button
@@ -185,7 +191,7 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderRadius: '6px',
+                  borderRadius: 'var(--radius-xs)',
                   color: 'var(--text-muted)'
                 }}
               >
@@ -207,8 +213,8 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
             >
               {previewSubmitted ? (
                 <div className="card" style={{ textAlign: 'center', padding: '36px 20px', margin: 'auto 0' }}>
-                  <div className="empty-icon-box" style={{ background: 'var(--success-subtle)', color: 'var(--success)', margin: '0 auto 16px' }}>
-                    <Icon name="check" size={28} />
+                  <div className="empty-icon-box" style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-xs)', border: '1px dashed var(--success-border)', background: 'var(--success-subtle)', color: 'var(--success)', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="check" size={24} />
                   </div>
                   <h3 style={{ fontSize: 'var(--font-size-lg)', marginBottom: '8px' }}>Sample Response Submitted!</h3>
                   <p style={{ maxWidth: '400px', margin: '0 auto 20px', fontSize: 'var(--font-size-sm)' }}>
@@ -216,7 +222,7 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                   </p>
                   <button
                     type="button"
-                    className="btn btn-3d-primary btn-md"
+                    className="fe-btn fe-btn-primary"
                     onClick={() => setPreviewSubmitted(false)}
                   >
                     Test Form Again
@@ -235,14 +241,14 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5 }}>
                       {previewTemplate.description}
                     </p>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 500 }}>
                       <span>* Indicates required field</span> • <span>{previewTemplate.fields.length} Input Fields</span>
                     </div>
                   </div>
 
                   <div className="preview-fields-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     {previewTemplate.fields.map((field) => (
-                      <div key={field.id} className="card" style={{ padding: '16px', background: 'var(--bg-surface)' }}>
+                      <div key={field.id} className="card" style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)' }}>
                         <label className="field-label" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>
                           {field.label}
                           {field.isRequired && <span style={{ color: 'var(--destructive)' }}> *</span>}
@@ -268,12 +274,12 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                    <button type="submit" className="btn btn-3d-primary btn-md">
+                    <button type="submit" className="fe-btn fe-btn-primary">
                       Submit Response (Preview Test)
                     </button>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
+                      className="fe-btn fe-btn-ghost"
                       onClick={() => setPreviewAnswers({})}
                     >
                       Clear Answers
@@ -299,14 +305,14 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
             >
               <button
                 type="button"
-                className="btn btn-ghost btn-md"
+                className="fe-btn fe-btn-ghost"
                 onClick={() => setPreviewTemplate(null)}
               >
                 Close Preview
               </button>
               <button
                 type="button"
-                className="btn btn-3d-primary btn-md"
+                className="fe-btn fe-btn-primary"
                 onClick={() => {
                   const tpl = previewTemplate;
                   setPreviewTemplate(null);

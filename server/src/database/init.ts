@@ -80,6 +80,7 @@ export async function initializeDatabase(): Promise<void> {
       submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       submitter_ip VARCHAR(45) NULL,
       submitter_email VARCHAR(255) NULL,
+      status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
       INDEX idx_submissions_form (form_id),
       CONSTRAINT fk_submissions_form FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
     ) ENGINE=InnoDB
@@ -109,6 +110,9 @@ export async function initializeDatabase(): Promise<void> {
   } catch (e) {}
   try {
     await rootConnection.query(`ALTER TABLE form_submissions ADD COLUMN submitter_email VARCHAR(255) NULL`);
+  } catch (e) {}
+  try {
+    await rootConnection.query(`ALTER TABLE form_submissions ADD COLUMN status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending'`);
   } catch (e) {}
   try {
     await rootConnection.query(`ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL`);

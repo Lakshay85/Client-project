@@ -71,6 +71,21 @@ export class FormController {
       next(error);
     }
   }
+
+  /** PATCH /api/forms/:id/responses/:submissionId/status — Update response status (approve/reject/pending) */
+  async updateSubmissionStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await submissionService.updateSubmissionStatus(
+        req.params.id as string,
+        req.params.submissionId as string,
+        req.user!.id,
+        req.body?.status
+      );
+      res.json({ message: `Submission marked as ${result.status}`, ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const formController = new FormController();

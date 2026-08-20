@@ -37,10 +37,28 @@ export class SubmissionRepository {
 
   async findByFormId(formId: string): Promise<RowDataPacket[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, submitted_at as submittedAt, submitter_ip as submitterIp, submitter_email as submitterEmail FROM form_submissions WHERE form_id = ? ORDER BY submitted_at DESC',
+      'SELECT id, submitted_at as submittedAt, submitter_ip as submitterIp, submitter_email as submitterEmail, status FROM form_submissions WHERE form_id = ? ORDER BY submitted_at DESC',
       [formId]
     );
     return rows;
+  }
+
+  async findByIdAndFormId(submissionId: string, formId: string): Promise<RowDataPacket | undefined> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, form_id as formId, submitted_at as submittedAt, submitter_ip as submitterIp, submitter_email as submitterEmail, status FROM form_submissions WHERE id = ? AND form_id = ?',
+      [submissionId, formId]
+    );
+    return rows[0];
+  }
+
+  async updateStatus(
+    submissionId: string,
+    status: 'pending' | 'approved' | 'rejected'
+  ): Promise<void> {
+    await pool.execute(
+      'UPDATE form_submissions SET status = ? WHERE id = ?',
+      [status, submissionId]
+    );
   }
 
   async findAnswersBySubmissionIds(
