@@ -98,7 +98,7 @@ export function AccessModal({
                   : 'Specify email IDs restricted from submitting:'}
               </label>
 
-              <div className="email-tag-input-row" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <div className="email-tag-input-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <input
                   type="email"
                   className="property-input"
@@ -111,12 +111,13 @@ export function AccessModal({
                       onAddEmail();
                     }
                   }}
+                  style={{ height: '38px', margin: 0, flex: 1 }}
                 />
                 <button
                   type="button"
-                  className="btn btn-3d-primary btn-sm"
-                  onClick={onAddEmail}
-                  style={{ flexShrink: 0 }}
+                  className="btn btn-3d-primary"
+                  onClick={() => onAddEmail()}
+                  style={{ height: '38px', padding: '0 16px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   + Add Email
                 </button>

@@ -70,8 +70,8 @@ export function useFormBuilder(options: {
 
   // Email tag management
   const addEmailTag = (emailStr?: string) => {
-    const target = emailStr || emailInput;
-    if (!target) return;
+    const target = typeof emailStr === 'string' && emailStr.trim() ? emailStr : emailInput;
+    if (!target || typeof target !== 'string') return;
     const parsed = target
       .split(/[\s,;]+/)
       .map((e) => e.trim().toLowerCase())

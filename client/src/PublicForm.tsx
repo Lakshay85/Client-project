@@ -5,7 +5,6 @@ import { Icon } from './Icons';
 import { Form } from './types';
 import { Button3D } from './components/Button3D';
 import { BrandLogo3D } from './components/BrandLogo3D';
-import { ThemeToggle } from './components/ThemeToggle';
 
 interface PublicFormProps {
   shareId: string;
@@ -149,17 +148,35 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
   if (error && !form) {
     return (
-      <div className="public-form-shell">
-        <div className="public-form-container" style={{ paddingTop: '80px' }}>
-          <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-            <h2 style={{ fontSize: 'var(--font-size-xl)', marginBottom: '8px' }}>Form Unavailable</h2>
-            <p style={{ marginBottom: '20px' }}>{error}</p>
-            {onHomeClick && (
-              <Button3D variant="primary" size="md" onClick={onHomeClick}>
+      <div className="public-form-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+        <div className="card public-card" style={{ textAlign: 'center', padding: '40px 32px', maxWidth: '480px', width: '100%', borderRadius: 'var(--radius-lg)' }}>
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              margin: '0 auto 16px',
+              boxShadow: '0 8px 24px rgba(239, 68, 68, 0.25)',
+            }}
+          >
+            <Icon name="alert-circle" size={28} />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
+            Form Unavailable
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>{error}</p>
+          {onHomeClick && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Button3D variant="primary" size="md" onClick={onHomeClick} style={{ minWidth: '160px' }}>
                 Go to Home Page
               </Button3D>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -171,31 +188,33 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
   if (submitted) {
     return (
       <div className="public-form-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-        <div className="card" style={{ padding: '40px', textAlign: 'center', maxWidth: '500px', width: '100%' }}>
-          <div className="empty-icon-box" style={{ background: 'var(--success-subtle)', color: 'var(--success)', margin: '0 auto 20px' }}>
-            <Icon name="check" size={32} />
+        <div className="card public-card" style={{ padding: '44px 36px', textAlign: 'center', maxWidth: '480px', width: '100%', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }}>
+          <div
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'var(--accent-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              margin: '0 auto 20px',
+            }}
+          >
+            <Icon name="check" size={30} />
           </div>
-          <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: '8px' }}>Response Submitted!</h2>
-          <p style={{ fontSize: 'var(--font-size-base)', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
+            Response Submitted!
+          </h2>
+          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', margin: '0', lineHeight: 1.6 }}>
             Thank you for submitting your response for <strong style={{ color: 'var(--text-primary)' }}>{form?.title}</strong>.
           </p>
 
-          {isSingleSubmission ? (
-            <div style={{ background: 'var(--bg-subtle)', padding: '10px 16px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: '24px' }}>
-              This form is configured for 1 submission per respondent. Your response has been recorded.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '12px' }}>
+          {!isSingleSubmission && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
               <Button3D variant="primary" size="md" onClick={handleSubmitAnother}>
                 Submit Another Response
-              </Button3D>
-            </div>
-          )}
-
-          {onHomeClick && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Button3D variant={isSingleSubmission ? 'primary' : 'outline'} size="md" onClick={onHomeClick}>
-                Back to Home
               </Button3D>
             </div>
           )}
@@ -206,13 +225,12 @@ export function PublicForm({ shareId, apiUrl, onHomeClick }: PublicFormProps) {
 
   return (
     <div className="public-form-shell">
-      <nav className="public-form-nav" style={{ justifyContent: 'space-between' }}>
-        <BrandLogo3D onClick={onHomeClick} logoSize={38} fontSize="18px" />
-        <ThemeToggle size="sm" />
+      <nav className="public-form-nav">
+        <BrandLogo3D onClick={onHomeClick} logoSize={34} fontSize="17px" />
       </nav>
 
       <form className="public-form-container" onSubmit={handleSubmit}>
-        <div className="card" style={{ padding: '32px' }}>
+        <div className="card public-card" style={{ padding: '36px' }}>
           {/* Header */}
           <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border-default)' }}>
             <h1 className="public-form-title">{form?.title}</h1>

@@ -181,7 +181,7 @@ export function FormBuilder({
           setEmailInput={builder.setEmailInput}
           singleSubmissionOnly={builder.singleSubmissionOnly}
           setSingleSubmissionOnly={builder.setSingleSubmissionOnly}
-          onAddEmail={builder.addEmailTag}
+          onAddEmail={() => builder.addEmailTag()}
           onRemoveEmail={builder.removeEmailTag}
           onClose={() => setShowAccessModal(false)}
         />
