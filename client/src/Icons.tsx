@@ -331,6 +331,25 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
           <line x1="10" y1="14" x2="21" y2="3" />
         </svg>
       );
+    case 'link':
+    case 'link-2':
+      return (
+        <svg {...props}>
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      );
+    case 'share':
+    case 'share-2':
+      return (
+        <svg {...props}>
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>
+      );
     case 'arrow-up':
       return (
         <svg {...props}>
@@ -371,6 +390,24 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
           <line x1="8" y1="21" x2="16" y2="21" />
           <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      );
+    case 'panel-left-close':
+    case 'sidebar-close':
+      return (
+        <svg {...props}>
+          <rect width="18" height="18" x="3" y="3" rx="2" />
+          <path d="M9 3v18" />
+          <path d="m14 9-3 3 3 3" />
+        </svg>
+      );
+    case 'panel-left-open':
+    case 'sidebar-open':
+      return (
+        <svg {...props}>
+          <rect width="18" height="18" x="3" y="3" rx="2" />
+          <path d="M9 3v18" />
+          <path d="m13 15 3-3-3-3" />
         </svg>
       );
     case 'panel-left':

@@ -60,28 +60,30 @@ export function ResponsesOverview({
   return (
     <div className="responses-overview-page">
       {/* Hero Header */}
-      <header className="responses-hero-card card">
-        <div className="hero-content-left">
-          <div className="hero-icon-badge">
-            <Icon name="chart" size={24} />
+      <header className="dashboard-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="form-card-icon-box" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
+            <Icon name="chart" size={22} />
           </div>
           <div>
-            <h1 className="hero-title">Responses & Analytics Hub</h1>
-            <p className="hero-subtitle">
+            <h1>
+              Responses &amp; Analytics Hub
+            </h1>
+            <p>
               Inspect submission records, approve or reject responses, export CSV reports, and manage respondents.
             </p>
           </div>
         </div>
 
-        <div className="hero-actions">
-          <Button3D
-            variant="primary"
-            size="md"
-            icon={<Icon name="plus" size={15} />}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="fe-btn fe-btn-primary"
             onClick={onCreateNewForm}
           >
-            Create New Form
-          </Button3D>
+            <Icon name="plus" size={15} />
+            <span>Create New Form</span>
+          </button>
         </div>
       </header>
 

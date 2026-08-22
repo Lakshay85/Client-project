@@ -27,14 +27,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="dashboard-content">
       {/* Blueprint Hero Banner */}
-      <header className="dashboard-hero">
-        <div>
-          <h1>
-            Interactive Form Engine
-          </h1>
-          <p>
-            Build high-converting multi-step forms with access controls, instant submissions, and real-time response telemetry.
-          </p>
+      <header className="dashboard-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="form-card-icon-box" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
+            <Icon name="grid" size={22} />
+          </div>
+          <div>
+            <h1>
+              Interactive Form Engine
+            </h1>
+            <p>
+              Build high-converting multi-step forms with access controls, instant submissions, and real-time response telemetry.
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrandLogoMark } from './BrandLogoMark';
 
 interface BrandLogo3DProps {
   onClick?: () => void;
@@ -10,7 +11,7 @@ interface BrandLogo3DProps {
 
 export const BrandLogo3D: React.FC<BrandLogo3DProps> = ({
   onClick,
-  logoSize = 26,
+  logoSize = 28,
   fontSize = '16px',
   showText = true,
   style,
@@ -33,22 +34,16 @@ export const BrandLogo3D: React.FC<BrandLogo3DProps> = ({
         ...style,
       }}
     >
-      {/* Blueprint Geometric Logo Mark with Corner Brackets */}
-      <span
-        className="fe-logo-mark"
-        style={{
-          width: `${logoSize}px`,
-          height: `${logoSize}px`,
-          flexShrink: 0,
-        }}
-      />
+      {/* Blueprint Geometric Logo Mark SVG */}
+      <BrandLogoMark size={logoSize} />
 
-      {/* Blueprint Project Title "FORM ENCLAVE" */}
-      {showText && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}>
-          FORM&nbsp;<span style={{ color: 'var(--accent-primary)' }}>ENCLAVE</span>
-        </span>
-      )}
+      {/* Blueprint Project Title "FORM ENCLAVE" with smooth slide/fade animation */}
+      <span
+        className={`brand-logo-text ${showText ? 'visible' : 'hidden'}`}
+        style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
+      >
+        FORM&nbsp;<span style={{ color: 'var(--accent-primary)' }}>ENCLAVE</span>
+      </span>
     </div>
   );
 };

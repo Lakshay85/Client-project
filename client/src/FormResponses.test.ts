@@ -14,6 +14,7 @@ describe('FormResponses CSV Export', () => {
         submittedAt: '2026-08-10T12:00:00Z',
         submitterEmail: 'user#test@example.com',
         submitterIp: '127.0.0.1',
+        status: 'pending' as const,
         answers: {
           f1: '#ff0000',
           f2: 'Line 1, "quoted text" & 100%'

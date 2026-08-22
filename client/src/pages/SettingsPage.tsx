@@ -9,18 +9,18 @@ export const SettingsPage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="settings-page" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="settings-page">
       {/* Header Toolbar */}
-      <header className="dashboard-hero" style={{ padding: '28px 32px' }}>
+      <header className="dashboard-hero">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div className="form-card-icon-box" style={{ width: '42px', height: '42px' }}>
-            <Icon name="settings" size={20} />
+          <div className="form-card-icon-box" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
+            <Icon name="settings" size={22} />
           </div>
           <div>
-            <h1 style={{ fontSize: 'var(--font-size-xl)', marginBottom: '4px' }}>
+            <h1>
               Portal &amp; Account Settings
             </h1>
-            <p style={{ margin: 0, fontSize: 'var(--font-size-sm)' }}>
+            <p>
               Manage workspace appearance, theme modes, security preferences, and account profile.
             </p>
           </div>
@@ -28,7 +28,7 @@ export const SettingsPage: React.FC = () => {
       </header>
 
       {/* Main Settings Grid */}
-      <div style={{ display: 'grid', gap: '20px', maxWidth: '680px' }}>
+      <div style={{ display: 'grid', gap: '20px', maxWidth: '780px', width: '100%' }}>
         {/* Appearance & Theme Card */}
         <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>

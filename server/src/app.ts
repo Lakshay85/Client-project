@@ -26,12 +26,11 @@ export function createApp() {
         if (
           !origin ||
           rawOrigins === '*' ||
-          allowedOrigins.includes(origin) ||
-          origin.endsWith('.vercel.app')
+          allowedOrigins.includes(origin)
         ) {
           return callback(null, true);
         }
-        return callback(null, true);
+        return callback(new Error('CORS: origin not allowed'), false);
       },
       credentials: true,
     })

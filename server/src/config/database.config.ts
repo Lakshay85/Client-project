@@ -60,7 +60,7 @@ export function buildPoolOptions(): PoolOptions {
   };
 
   if (databaseConfig.ssl) {
-    opts.ssl = { rejectUnauthorized: false };
+    opts.ssl = { rejectUnauthorized: true };
   }
 
   return opts;
@@ -76,7 +76,7 @@ export function buildConnectionOptions(): ConnectionOptions {
   };
 
   if (databaseConfig.ssl) {
-    opts.ssl = { rejectUnauthorized: false };
+    opts.ssl = { rejectUnauthorized: true };
   }
 
   return opts;

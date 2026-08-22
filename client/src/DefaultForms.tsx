@@ -44,57 +44,60 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
   });
 
   return (
-    <div className="default-forms-page" style={{ width: '100%', margin: 0, padding: 0 }}>
-      {/* 1. Centered Header Section */}
-      <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 32px', padding: 0 }}>
+    <div className="default-forms-page">
+      {/* 1. Consistent Hero Header Banner */}
+      <header className="dashboard-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="form-card-icon-box" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
+            <Icon name="textarea" size={22} />
+          </div>
+          <div>
+            <h1>
+              Form Blueprints &amp; <span style={{ color: 'var(--accent-primary)' }}>Templates</span>
+            </h1>
+            <p>
+              Select from our curated form blueprints designed with structural precision. Customize fields, configure email gatekeeping, and start collecting telemetry instantly.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="count-badge">
+            {filteredTemplates.length} {filteredTemplates.length === 1 ? 'template' : 'templates'}
+          </span>
+        </div>
+      </header>
 
-        <h1
-          style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: '34px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.01em',
-            margin: '0 0 10px',
-            lineHeight: 1.2
-          }}
-        >
-          Form Blueprints &amp; <span style={{ color: 'var(--accent-primary)' }}>Templates</span>
-        </h1>
-        <p
-          style={{
-            fontSize: '15px',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.6,
-            margin: '0 0 24px'
-          }}
-        >
-          Select from our curated form blueprints designed with structural precision. Customize fields, configure email gatekeeping, and start collecting telemetry instantly.
-        </p>
+      {/* 2. Controls Bar: Search & Category Filter Pills */}
+      <div className="card responses-controls-bar">
+        <div className="search-input-wrapper">
+          <Icon name="search" size={16} />
+          <input
+            type="search"
+            placeholder="Search blueprints by name or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="search-clear-btn"
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+            >
+              <Icon name="x" size={14} />
+            </button>
+          )}
+        </div>
 
-        {/* 2. Monospace Pill Filter Buttons */}
-        <div className="gallery-pills-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+        <div className="status-filter-pills">
           {categories.map((cat) => {
             const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase();
             return (
               <button
                 key={cat.id}
                 type="button"
-                className={`gallery-filter-pill ${isSelected ? 'active' : ''}`}
+                className={`filter-pill ${isSelected ? 'active' : ''}`}
                 onClick={() => setCategoryFilter(cat.id)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 'var(--radius-xs)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-default)',
-                  background: isSelected ? 'var(--accent-primary)' : 'var(--bg-surface)',
-                  color: isSelected ? 'var(--accent-fg)' : 'var(--text-secondary)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(14, 140, 163, 0.2)' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
               >
                 {cat.label}
               </button>
@@ -104,16 +107,7 @@ export function DefaultForms({ onUseTemplate }: DefaultFormsProps) {
       </div>
 
       {/* 3. Multi-Column Grid */}
-      <div
-        className="form-tools-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '20px',
-          padding: 0,
-          margin: 0
-        }}
-      >
+      <div className="forms-grid">
         {filteredTemplates.map((template) => (
           <TemplateCard
             key={template.id}

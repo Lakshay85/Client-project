@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandLogo3D } from '../components/BrandLogo3D';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -48,17 +49,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
       {/* ── TOP NAV ── */}
       <nav className="fe-nav">
         <div className="fe-wrap fe-nav-inner">
-          <div className="fe-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-            <span className="fe-logo-mark" />
-            FORM&nbsp;<span>ENCLAVE</span>
-          </div>
-
-          {/* <div className="fe-nav-right">
-            <ThemeToggle size="sm" className="fe-theme-toggle" />
-            <button className="fe-back-link" onClick={() => navigate('/')}>
-              ← Back home
-            </button>
-          </div> */}
+          <BrandLogo3D onClick={() => navigate('/')} logoSize={30} fontSize="17px" />
         </div>
       </nav>
 

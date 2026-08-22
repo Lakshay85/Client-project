@@ -70,6 +70,24 @@ export function FormBuilder({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isPreview, setIsPreview] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'palette' | 'canvas' | 'properties'>('canvas');
+
+  const handleAddField = (template: any) => {
+    builder.addFieldFromTemplate(template);
+    // Switch to canvas tab so user sees the newly added field immediately
+    setMobileTab('canvas');
+  };
+
+  const handleSelectField = (id: string) => {
+    builder.setSelectedFieldId(id);
+    // Switch to properties tab so mobile user can immediately configure it
+    setMobileTab('properties');
+  };
+
+  const handleCloseProperties = () => {
+    builder.setSelectedFieldId(null);
+    setMobileTab('canvas');
+  };
 
   const onPublish = () =>
     handlePublish({
@@ -93,50 +111,64 @@ export function FormBuilder({
         onBack={onBack}
         onPublish={onPublish}
         publishing={publishing}
+        mobileTab={mobileTab}
+        setMobileTab={setMobileTab}
+        hasSelectedField={!!builder.selectedField}
+        fieldsCount={builder.fields.length}
       />
 
       {error && <div className="builder-alert error">{error}</div>}
 
-      <div className="builder-body">
+      <div className={`builder-body mobile-tab-${mobileTab}`}>
         {!isPreview && (
-          <FieldPalette
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            onAddField={builder.addFieldFromTemplate}
-            onDragStart={dnd.handleTemplateDragStart}
-          />
+          <div className={`builder-palette-pane ${mobileTab === 'palette' ? 'mobile-active' : ''}`}>
+            <FieldPalette
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              onAddField={handleAddField}
+              onDragStart={dnd.handleTemplateDragStart}
+            />
+          </div>
         )}
 
-        <FormCanvas
-          fields={builder.fields}
-          selectedFieldId={builder.selectedFieldId}
-          isPreview={isPreview}
-          title={builder.title}
-          description={builder.description}
-          accessType={builder.accessType}
-          restrictedEmails={builder.restrictedEmails}
-          singleSubmissionOnly={builder.singleSubmissionOnly}
-          onSetTitle={builder.setTitle}
-          onSetDescription={builder.setDescription}
-          onSelectField={builder.setSelectedFieldId}
-          onMoveField={builder.moveField}
-          onDuplicateField={builder.duplicateField}
-          onRemoveField={builder.removeField}
-          onShowAccessModal={() => setShowAccessModal(true)}
-          onDragStart={dnd.setDraggedFieldIndex}
-          onDragOver={dnd.handleCanvasDragOver}
-          onDrop={dnd.handleCanvasDrop}
-        />
+        <div className={`builder-canvas-pane ${mobileTab === 'canvas' || isPreview ? 'mobile-active' : ''}`}>
+          <FormCanvas
+            fields={builder.fields}
+            selectedFieldId={builder.selectedFieldId}
+            isPreview={isPreview}
+            title={builder.title}
+            description={builder.description}
+            accessType={builder.accessType}
+            restrictedEmails={builder.restrictedEmails}
+            singleSubmissionOnly={builder.singleSubmissionOnly}
+            onSetTitle={builder.setTitle}
+            onSetDescription={builder.setDescription}
+            onSelectField={handleSelectField}
+            onMoveField={builder.moveField}
+            onDuplicateField={builder.duplicateField}
+            onRemoveField={builder.removeField}
+            onShowAccessModal={() => setShowAccessModal(true)}
+            onDragStart={dnd.setDraggedFieldIndex}
+            onDragOver={dnd.handleCanvasDragOver}
+            onDrop={dnd.handleCanvasDrop}
+            onOpenPalette={() => setMobileTab('palette')}
+          />
+        </div>
 
         {!isPreview && builder.selectedField && (
-          <FieldPropertiesPanel
-            selectedField={builder.selectedField}
-            onUpdateField={builder.updateSelectedField}
-            onRemoveField={builder.removeField}
-            onClose={() => builder.setSelectedFieldId(null)}
-          />
+          <div className={`builder-properties-pane ${mobileTab === 'properties' ? 'mobile-active' : ''}`}>
+            <FieldPropertiesPanel
+              selectedField={builder.selectedField}
+              onUpdateField={builder.updateSelectedField}
+              onRemoveField={(id) => {
+                builder.removeField(id);
+                setMobileTab('canvas');
+              }}
+              onClose={handleCloseProperties}
+            />
+          </div>
         )}
       </div>
 

@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { pool } from '../database/connection.js';
-import { RowDataPacket } from 'mysql2';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { FormFieldRequest } from '../dto/form.dto.js';
+import { NotFoundError } from '../exceptions/AppError.js';
 
 /**
  * Repository for form and form field data access operations.
@@ -65,8 +66,72 @@ export class FormRepository {
       ]
     );
 
-    await pool.execute('DELETE FROM form_fields WHERE form_id = ?', [params.formId]);
-    await this.insertFields(params.formId, params.fields);
+    // --- Field diff: update existing, insert new, delete removed ---
+
+    // 1. Get the set of field IDs currently in the database
+    const [existingRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM form_fields WHERE form_id = ?',
+      [params.formId]
+    );
+    const existingIds = new Set(existingRows.map((r) => r.id as string));
+
+    // 2. Build the set of incoming field IDs (fields with an id that exists in DB → update, others → insert)
+    const incomingIds = new Set<string>();
+
+    for (let i = 0; i < params.fields.length; i++) {
+      const f = params.fields[i];
+      const fieldId = f.id || crypto.randomUUID();
+
+      if (f.id && existingIds.has(f.id)) {
+        // UPDATE existing field in place — preserves form_submission_answers references
+        incomingIds.add(f.id);
+        await pool.execute(
+          `UPDATE form_fields
+             SET label = ?, field_type = ?, placeholder = ?, help_text = ?, is_required = ?, options = ?, config = ?, sort_order = ?
+           WHERE id = ? AND form_id = ?`,
+          [
+            f.label || `Question ${i + 1}`,
+            f.fieldType || 'text',
+            f.placeholder || null,
+            f.helpText || null,
+            Boolean(f.isRequired),
+            f.options ? JSON.stringify(f.options) : null,
+            f.config ? JSON.stringify(f.config) : null,
+            i,
+            f.id,
+            params.formId,
+          ]
+        );
+      } else {
+        // INSERT new field
+        await pool.execute(
+          `INSERT INTO form_fields (id, form_id, label, field_type, placeholder, help_text, is_required, options, config, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            fieldId,
+            params.formId,
+            f.label || `Question ${i + 1}`,
+            f.fieldType || 'text',
+            f.placeholder || null,
+            f.helpText || null,
+            Boolean(f.isRequired),
+            f.options ? JSON.stringify(f.options) : null,
+            f.config ? JSON.stringify(f.config) : null,
+            i,
+          ]
+        );
+      }
+    }
+
+    // 3. Delete only the fields that were removed by the user
+    const removedIds = [...existingIds].filter((id) => !incomingIds.has(id));
+    if (removedIds.length > 0) {
+      const placeholders = removedIds.map(() => '?').join(', ');
+      await pool.execute(
+        `DELETE FROM form_fields WHERE id IN (${placeholders}) AND form_id = ?`,
+        [...removedIds, params.formId]
+      );
+    }
   }
 
   private async insertFields(formId: string, fields: FormFieldRequest[]): Promise<void> {
@@ -168,7 +233,13 @@ export class FormRepository {
   }
 
   async deleteByIdAndUserId(formId: string, userId: string): Promise<void> {
-    await pool.execute('DELETE FROM forms WHERE id = ? AND user_id = ?', [formId, userId]);
+    const [result] = await pool.execute<ResultSetHeader>(
+      'DELETE FROM forms WHERE id = ? AND user_id = ?',
+      [formId, userId]
+    );
+    if (result.affectedRows === 0) {
+      throw new NotFoundError('Form not found or unauthorized.');
+    }
   }
 }
 

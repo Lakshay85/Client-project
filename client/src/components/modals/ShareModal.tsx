@@ -87,7 +87,12 @@ export function ShareModal({ shareId, onCopyLink, onClose }: ShareModalProps) {
                 fontWeight: 600, outline: 'none',
               }}
             />
-            <Button3D variant="primary" size="sm" onClick={() => onCopyLink(shareId)}>
+            <Button3D
+              variant="primary"
+              size="sm"
+              icon={<Icon name="link" size={14} />}
+              onClick={() => onCopyLink(shareId)}
+            >
               Copy Link
             </Button3D>
           </div>

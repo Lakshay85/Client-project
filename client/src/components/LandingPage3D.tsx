@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { ThemeToggle } from './ThemeToggle';
+import { BrandLogo3D } from './BrandLogo3D';
 
 interface LandingPage3DProps {
   onLogin: () => void;
@@ -41,10 +42,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
       {/* ── NAV ── */}
       <nav className="fe-nav">
         <div className="fe-wrap fe-nav-inner">
-          <div className="fe-logo">
-            <span className="fe-logo-mark" />
-            FORM&nbsp;ENCLAVE
-          </div>
+          <BrandLogo3D logoSize={30} fontSize="17px" />
           <div className="fe-nav-links">
             <a href="#features">Features</a>
             <a href="#templates">Templates</a>
@@ -232,10 +230,7 @@ export const LandingPage3D: React.FC<LandingPage3DProps> = ({ onLogin, onSignup 
 
       {/* ── FOOTER ── */}
       <footer className="fe-wrap fe-footer">
-        <div className="fe-logo" style={{ fontSize: '13px' }}>
-          <span className="fe-logo-mark" style={{ width: '18px', height: '18px' }} />
-          FORM ENCLAVE
-        </div>
+        <BrandLogo3D logoSize={24} fontSize="14px" />
         <div className="fe-mono">© 2026 Form Enclave — drafted with structural precision.</div>
       </footer>
     </div>

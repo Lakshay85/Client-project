@@ -22,6 +22,7 @@ interface FormCanvasProps {
   onDragStart: (index: number) => void;
   onDragOver: (e: DragEvent<HTMLElement>) => void;
   onDrop: (e: DragEvent<HTMLElement>, dropIndex?: number) => void;
+  onOpenPalette?: () => void;
 }
 
 /**
@@ -46,6 +47,7 @@ export function FormCanvas({
   onDragStart,
   onDragOver,
   onDrop,
+  onOpenPalette,
 }: FormCanvasProps) {
   return (
     <main
@@ -127,32 +129,65 @@ export function FormCanvas({
             className="empty-canvas-dropzone"
             onDragOver={onDragOver}
             onDrop={(e) => onDrop(e, 0)}
+            onClick={() => onOpenPalette && onOpenPalette()}
+            style={{ cursor: onOpenPalette ? 'pointer' : 'default' }}
+            title="Click to browse and add fields"
           >
             <div className="dropzone-icon">
               <Icon name="plus" size={40} />
             </div>
             <h3>Your form canvas is empty</h3>
-            <p>Drag elements here from the left sidebar or click any field to begin.</p>
+            <p>Drag elements here from the palette or tap below to add fields.</p>
+            {onOpenPalette && (
+              <button
+                type="button"
+                className="fe-btn fe-btn-primary"
+                style={{ marginTop: '14px' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenPalette();
+                }}
+              >
+                <Icon name="plus" size={15} />
+                <span>Browse & Add Fields</span>
+              </button>
+            )}
           </div>
         ) : (
-          fields.map((field, index) => (
-            <FieldCard
-              key={field.id}
-              field={field}
-              index={index}
-              isSelected={selectedFieldId === field.id && !isPreview}
-              isPreview={isPreview}
-              totalFields={fields.length}
-              onSelect={() => onSelectField(field.id)}
-              onMoveUp={() => onMoveField(index, 'up')}
-              onMoveDown={() => onMoveField(index, 'down')}
-              onDuplicate={() => onDuplicateField(field)}
-              onRemove={() => onRemoveField(field.id)}
-              onDragStart={() => onDragStart(index)}
-              onDragOver={onDragOver}
-              onDrop={(e) => onDrop(e, index)}
-            />
-          ))
+          <>
+            {fields.map((field, index) => (
+              <FieldCard
+                key={field.id}
+                field={field}
+                index={index}
+                isSelected={selectedFieldId === field.id && !isPreview}
+                isPreview={isPreview}
+                totalFields={fields.length}
+                onSelect={() => onSelectField(field.id)}
+                onMoveUp={() => onMoveField(index, 'up')}
+                onMoveDown={() => onMoveField(index, 'down')}
+                onDuplicate={() => onDuplicateField(field)}
+                onRemove={() => onRemoveField(field.id)}
+                onDragStart={() => onDragStart(index)}
+                onDragOver={onDragOver}
+                onDrop={(e) => onDrop(e, index)}
+              />
+            ))}
+
+            {!isPreview && onOpenPalette && (
+              <div className="mobile-add-field-row" style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="fe-btn fe-btn-ghost"
+                  onClick={onOpenPalette}
+                  style={{ width: '100%', justifyContent: 'center', border: '1px dashed var(--accent-border)' }}
+                >
+                  <Icon name="plus" size={15} />
+                  <span>+ Add Another Field</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>

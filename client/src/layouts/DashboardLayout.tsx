@@ -73,14 +73,14 @@ export const DashboardLayout: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 cursor: 'pointer',
-                overflow: 'hidden'
+                minWidth: 0
               }}
               onClick={() => navigate('/dashboard')}
               title="Go to Dashboard"
             >
               <BrandLogo3D
-                logoSize={isCollapsed ? 32 : 36}
-                fontSize="17px"
+                logoSize={isCollapsed ? 30 : 32}
+                fontSize="15.5px"
                 showText={!isCollapsed}
               />
             </div>
@@ -93,7 +93,7 @@ export const DashboardLayout: React.FC = () => {
               title={isCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
               aria-label={isCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
             >
-              <Icon name={isCollapsed ? 'chevron-right' : 'chevron-left'} size={15} />
+              <Icon name={isCollapsed ? 'panel-left-open' : 'panel-left-close'} size={17} />
             </button>
           </div>
 
@@ -105,7 +105,7 @@ export const DashboardLayout: React.FC = () => {
               title="Dashboard"
             >
               <Icon name="grid" size={18} />
-              {!isCollapsed && <span className="menu-label">Dashboard</span>}
+              <span className="menu-label">Dashboard</span>
             </NavLink>
 
             <NavLink
@@ -114,7 +114,7 @@ export const DashboardLayout: React.FC = () => {
               title="My Forms"
             >
               <Icon name="textarea" size={18} />
-              {!isCollapsed && <span className="menu-label">My Forms</span>}
+              <span className="menu-label">My Forms</span>
             </NavLink>
 
             <NavLink
@@ -123,7 +123,7 @@ export const DashboardLayout: React.FC = () => {
               title="Analytics"
             >
               <Icon name="chart" size={18} />
-              {!isCollapsed && <span className="menu-label">Analytics</span>}
+              <span className="menu-label">Analytics</span>
             </NavLink>
 
             <NavLink
@@ -132,7 +132,7 @@ export const DashboardLayout: React.FC = () => {
               title="Settings"
             >
               <Icon name="settings" size={18} />
-              {!isCollapsed && <span className="menu-label">Settings</span>}
+              <span className="menu-label">Settings</span>
             </NavLink>
           </nav>
         </div>
@@ -146,33 +146,17 @@ export const DashboardLayout: React.FC = () => {
             <div className="sidebar-user-avatar">
               {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
-            {!isCollapsed && (
-              <span className="sidebar-user-name">{user.name.split(' ')[0]}</span>
-            )}
+            <span className="sidebar-user-name">{user.name.split(' ')[0]}</span>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexDirection: isCollapsed ? 'column' : 'row',
-              gap: '4px'
-            }}
-          >
-            <ThemeToggle size="sm" />
+          <div className="sidebar-user-actions">
+            <ThemeToggle size="sm" className="sidebar-theme-toggle" />
             <button
               type="button"
-              className="icon-btn"
+              className="icon-btn sidebar-logout-btn"
               onClick={handleSignOut}
               title="Sign out"
-              style={{
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-muted)'
-              }}
+              aria-label="Sign out"
             >
               <Icon name="logout" size={15} />
             </button>
