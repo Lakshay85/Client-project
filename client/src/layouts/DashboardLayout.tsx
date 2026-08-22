@@ -14,6 +14,22 @@ export const DashboardLayout: React.FC = () => {
     return localStorage.getItem('formenclave_sidebar_collapsed') === 'true';
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+  });
+
+  // Track screen resize for mobile vs desktop mode
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-close mobile drawer when route changes
   useEffect(() => {
@@ -34,6 +50,9 @@ export const DashboardLayout: React.FC = () => {
   };
 
   if (!user) return null;
+
+  // On mobile devices, the drawer is never rendered in collapsed mode
+  const effectiveCollapsed = isMobile ? false : isCollapsed;
 
   return (
     <div className="app-sidebar-layout">
@@ -64,9 +83,9 @@ export const DashboardLayout: React.FC = () => {
       )}
 
       {/* Left Vertical Sidebar Navigation */}
-      <aside className={`sidebar-shell ${isCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <aside className={`sidebar-shell ${effectiveCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div>
-          {/* Sidebar Brand Header & Minimize/Maximize Toggle Button */}
+          {/* Sidebar Brand Header & Minimize/Maximize or Mobile Close Button */}
           <div className="sidebar-brand-wrapper">
             <div
               style={{
@@ -75,26 +94,41 @@ export const DashboardLayout: React.FC = () => {
                 cursor: 'pointer',
                 minWidth: 0
               }}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => {
+                navigate('/dashboard');
+                if (isMobile) setMobileOpen(false);
+              }}
               title="Go to Dashboard"
             >
               <BrandLogo3D
-                logoSize={isCollapsed ? 30 : 32}
+                logoSize={effectiveCollapsed ? 30 : 32}
                 fontSize="15.5px"
-                showText={!isCollapsed}
+                showText={!effectiveCollapsed}
               />
             </div>
 
             {/* Desktop Collapse / Mobile Close Button */}
-            <button
-              type="button"
-              className="sidebar-toggle-btn"
-              onClick={toggleSidebar}
-              title={isCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
-              aria-label={isCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
-            >
-              <Icon name={isCollapsed ? 'panel-left-open' : 'panel-left-close'} size={17} />
-            </button>
+            {isMobile ? (
+              <button
+                type="button"
+                className="sidebar-toggle-btn mobile-close-btn"
+                onClick={() => setMobileOpen(false)}
+                title="Close menu"
+                aria-label="Close menu"
+              >
+                <Icon name="x" size={17} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="sidebar-toggle-btn"
+                onClick={toggleSidebar}
+                title={effectiveCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
+                aria-label={effectiveCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
+              >
+                <Icon name={effectiveCollapsed ? 'panel-left-open' : 'panel-left-close'} size={17} />
+              </button>
+            )}
           </div>
 
           {/* Sidebar Menu Items */}
@@ -103,6 +137,7 @@ export const DashboardLayout: React.FC = () => {
               to="/dashboard"
               className={({ isActive }) => `sidebar-menu-item ${isActive ? 'active' : ''}`}
               title="Dashboard"
+              onClick={() => isMobile && setMobileOpen(false)}
             >
               <Icon name="grid" size={18} />
               <span className="menu-label">Dashboard</span>
@@ -112,6 +147,7 @@ export const DashboardLayout: React.FC = () => {
               to="/my-forms"
               className={({ isActive }) => `sidebar-menu-item ${isActive ? 'active' : ''}`}
               title="My Forms"
+              onClick={() => isMobile && setMobileOpen(false)}
             >
               <Icon name="textarea" size={18} />
               <span className="menu-label">My Forms</span>
@@ -121,6 +157,7 @@ export const DashboardLayout: React.FC = () => {
               to="/analytics"
               className={({ isActive }) => `sidebar-menu-item ${isActive ? 'active' : ''}`}
               title="Analytics"
+              onClick={() => isMobile && setMobileOpen(false)}
             >
               <Icon name="chart" size={18} />
               <span className="menu-label">Analytics</span>
@@ -130,6 +167,7 @@ export const DashboardLayout: React.FC = () => {
               to="/settings"
               className={({ isActive }) => `sidebar-menu-item ${isActive ? 'active' : ''}`}
               title="Settings"
+              onClick={() => isMobile && setMobileOpen(false)}
             >
               <Icon name="settings" size={18} />
               <span className="menu-label">Settings</span>
@@ -173,3 +211,4 @@ export const DashboardLayout: React.FC = () => {
     </div>
   );
 };
+
